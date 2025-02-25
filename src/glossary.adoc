@@ -1,0 +1,9 @@
+[[glossary]]
+== Glossary
+
+|===
+
+| TBD | To be done.
+
+|===
+

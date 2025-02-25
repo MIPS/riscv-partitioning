@@ -1,0 +1,11 @@
+[[intro]]
+
+== Introduction
+
+This document describes a holistic partitioning solution for RISC-V-based
+platforms, based on (and by enhancing);
+
+* WorldGuard, per the publicly-available v0.4 specification from SiFive
+* TrustZone(tm) interoperability, using AXI-based signaling
+* ePMP, per the RISC-V privileged specification
+* IOPMP, per the v0.7 specification
