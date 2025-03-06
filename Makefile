@@ -14,14 +14,23 @@
 
 # Change these if you want;
 # - DOC is output name and src/$(DOC).adoc is the primary input
-# - DESTDIR is created/destroyed, choose it accordingly
+# - DESTDIR is created/destroyed, choose it accordingly, or I'll pick one
 # - for f in FORMATS, $(ASCIIDOCTOR_$f) is a build command to run
 # - CONTIMG is the <img> name passed to docker-run
 DOC := riscv-partitioning
 #DESTDIR := ${PWD}/build
-DESTDIR := /mnt/c/Users/$(shell whoami)/Downloads/$(DOC)
+#DESTDIR := /mnt/c/Users/$(shell whoami)/Downloads/$(DOC)
 FORMATS := PDF HTML
 CONTIMG := riscvintl/riscv-docs-base-container-image:latest
+
+# If not specified, pick a useful default
+ifeq (,$(DESTDIR))
+ifneq (,$(wildcard /mnt/c/Users/$(shell whoami)/Downloads))
+DESTDIR := /mnt/c/Users/$(shell whoami)/Downloads/$(DOC)
+else
+DESTDIR := ${PWD}/build
+endif
+endif
 
 # Change these if you must;
 ASCIIDOCTOR_PDF := asciidoctor-pdf
@@ -44,6 +53,11 @@ TOUCHFILE := $(DESTDIR)/buildcmd
 # - PWD/src/$(DOC).adoc is the primary source file
 # - Output is made dependent on all files inside PWD/src/
 DOCKER_QUOTE := "
+ifeq (,$(VERBOSE))
+V := @
+else
+V :=
+endif
 BUILDCMD := docker run --rm \
 	-v ${PWD}:/inputs:ro \
 	-v $(DESTDIR):/outputs \
@@ -75,18 +89,19 @@ build: $(TOUCHFILE)
 
 # TBD: remove the sed line when copyright is no longer redirected to MIPS
 $(TOUCHFILE): $(DEPS) | $(DESTDIR)
-	sed -i.bak "s/RISC-V International/MIPS/g" docs-resources/themes/riscv-pdf.yml
-	$(BUILDCMD)
-	echo 'BUILDCMD := $(BUILDCMD)' > $@
+	$(V)sed -i.bak "s/RISC-V International/MIPS/g" docs-resources/themes/riscv-pdf.yml
+	@echo "[BUILD $(DOC) -> $(DESTDIR)]"
+	$(V)$(BUILDCMD)
+	$(V)echo 'BUILDCMD := $(BUILDCMD)' > $@
 
 $(DESTDIR):
-	mkdir -p $@
+	$(V)mkdir -p $@
 
 ifeq (,$(wildcard $(DESTDIR)))
 clean:
 else
 clean:
 	@echo "Cleaning up generated files..."
-	$(CLEANCMD)
+	$(V)$(CLEANCMD)
 	@echo "Cleanup completed."
 endif
