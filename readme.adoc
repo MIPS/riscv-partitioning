@@ -1,6 +1,4 @@
-= non-existant TG Specifications
-
-This repository is for specification deliverables of the non-existant TG per the proposed link:charter.adoc[charter]. The specification(s) are not ratified and everything in these documents may change.
+= MIPS' Secure System Partitioning specification
 
 = License
 
@@ -13,8 +11,7 @@ Contributors to this specification are contained in the link:src/contributors.ad
 
 = Dependencies
 
-This project is built using AsciiDoctor (Ruby). The repository has been setup to build the PDF on
-checkin using GitHub actions. Workflow dependencies are located in the `dependencies` directory.
+This project is built using AsciiDoctor (Ruby), via the base RVI docker image.
 
 For more information on AsciiDoctor, specification guidelines, or building locally, see the
 https://github.com/riscv/docs-dev-guide[RISC-V Documentation Developer Guide].
