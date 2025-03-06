@@ -1,0 +1,424 @@
+:imagesdir: ./images
+
+[[isa]]
+== Core ISA
+
+Despite the support for TZ interoperability, we should emphasize that it is the
+WG ISA extensions that provide the world-view, literally and figuratively, for
+software running on RISC-V harts. TZ support is derived from WG support.
+
+=== Preamble
+
+==== WorldGuard
+
+The WG solution proposes a sequence of incremental extensions that
+progressively add CSR registers but do not add any new instructions. We propose
+that;
+
+* All the WG extensions are supported and permanently enabled.
+** The complexity of incorporating the firstmost WG extension is close enough
+   to the complexity of incorporating them all that we find little benefit to
+   implementing intermediary levels, even in microcontroller form-factors. Not
+   having to support such intermediary levels also provides a welcome
+   simplification.
+** It is reasonable to have WG permanently enabled because default settings can
+   be obtained that provide behavior functionally equivalent to WG being
+   disabled.
+* The publicly-available WG definition is modified;
+** For improvement of WG itself, the addition of `mwid` and `mwidlist` CSRs and
+   their respective behaviors.footnote:[There is a second publicly-available WG
+   document that suggests the existence of these two additional CSRs, but it
+   does not specify any detail so we are treating our definition as a
+   modification.]
+** For interaction with TZ, the addition of `mwidseclist` and its behavior.
+   (See "Secure worlds" below.)
+** Alternative illegal-value semantics for the WG CSRs.
+* Some of the WG CSRs be exposed for external control.
+
+==== TrustZone
+
+As stated above, support for TZ interoperability is derived from WG:
+
+* The ability to "speak TrustZone" comes from a single per-hart (M-mode,
+  secure-boot-lockable) CSR called `mwidseclist` that is used to map from WG
+  state (the effective WID) to TZ state ("Secure" or "Non-Secure"). This is
+  described in the next section.
+* A run-time privilege constraint is defined that mimics the behavior expected
+  of TZ software models, namely;
+** S-mode cannot have a more secure state than M-mode, and
+** S-mode and U-mode must have the same security state. I.e.
+....
+    SecureLevel(M-mode) >= SecureLevel(S-mode)
+    SecureLevel(S-mode) == SecureLevel(U-mode)
+....
+
+=== Secure worlds
+
+The most structurally important change relates to the "TrustZonification" of WG
+mentioned in the last section - that is, harmonizing the WID and NS concepts in
+the behavior of the processor core (and of the load/store/fetch transactions
+that it emits).
+
+The key addition is the `mwidseclist` CSR. Like `mwidlist` and `mwiddeleg`,
+this is a bitmask with a single bit representing each WID. The `mwidseclist`
+CSR acts as a mask to determine for any given WID whether it should emit
+transactions marked as "Secure" or "Non-Secure", in the TZ sense.
+
+=== Configuration handling
+
+The precise behavior of (and interaction between) the CSRs will be described in
+two parts, depending on whether they are the _lockable partitioning registers_
+(`mwid`, `mwidlist`, `mwidseclist`) or the _run-time manipulable registers_
+(`mlwid`, `mwiddeleg`, `slwid`). But first a note about "illegal values".
+
+==== Illegal values
+
+For registers holding WID values, the most recent publicly-available WG
+proposal stipulates: "if an illegal WID is written, the lowest-numbered legal
+WID is returned". It does not specify how WID-holding registers should behave
+if, rather than them being written with illegal values, __their existing values
+become implicitly illegal__ due to changes to other registers...
+
+In this proposal, we opt for different semantics to handle such cases and
+therefore deviate from the WG proposal. Instead of having "illegal values" that
+need to be corrected (in a WARL sense), we allow all registers to assume
+arbitrary values, whereby the so-called "illegal values" simply correspond to
+(mis)configurations that by their nature will fail to operate. (No corrective
+WARL behavior is required, a welcome simplification.)
+
+==== Lockable partitioning registers
+
+* These are the CSR registers that are exposed for external configuration
+  control.
+* These registers are assumed to be set statically to constrain the hart until
+  it is next reset, and the behavior of the "run-time manipulable registers" is
+  governed by these registers.
+* Apart from the "L"ock bit in `mwid` (which is sticky to 1 and renders all 3
+  registers read-only until the next reset), these registers are modifiable
+  independently and no combination of values is illegal, _per se_.
+* These partitioning registers place no constraints on the order in which
+  they're read or written. (This simplifies the hardware design and resulting
+  programming model.)
+* These registers are sampled by each MRET/SRET instruction and on every
+  fault/trap/interrupt (i.e. at every potentially-privilege-level-changing
+  event), to calculate the effective WID and security state. The rationale for
+  this is explained in <<effectiveWIDSampling,Effective WID sampling>>. As with
+  ePMP, these registers obey the standard RISC-V ordering rules for implicit
+  CSR reads. (This bounds any additional DV effort by matching existing
+  well-defined CSR behavior.)
+* `mwid` and `mwidlist`: though it would make sense for the `mwid` WID to be
+  set in `mwidlist`, there is no need to enforce it at the register level, the
+  catastrophic effect of the mis-configuration will take care of itself.
+  (`mwidlist` limits the set of WIDs that the hart may emit transactions for,
+  so M-mode will be unable to emit loads, stores, and instruction fetches if
+  the `mwid` bit of `mwidlist` isn't set.)
+* `mwidseclist`: this bitmask defines the TZ security state (NS) of all the
+  WIDs (0 implies "Secure", 1 implies "Non-Secure"). It does not matter which
+  WIDs are contained in `mwidlist` nor which WIDs are assigned to `mwid`,
+  `mlwid`, and `slwid` - the `mwidseclist` CSR can be modified arbitrarily up
+  until the "L"ock bit is set in `mwid`.
+
+==== Run-time manipulable registers
+
+* These are the CSRs that are expected to be modified by M-mode and S-mode at
+  run-time, though many use-cases will use static/unchanging values for these
+  CSRs also. These CSRs are not lockable and are not exported for external
+  configuration, and so they are not considered part of the partitioning
+  configuration (rather, they are the _users_ of the partitioning
+  configuration).
+* `mlwid` and `slwid`: these registers determine the effective WID of S-mode
+  and U-mode respectively. Though it makes sense for their corresponding bits
+  to be set in `mwidlist` (and for the `mwiddeleg` bit corresponding to `slwid`
+  be set), there is no need to enforce such relationships at the register
+  level, the catastrophic effects of this kind of misconfiguration will take
+  care of matters. (Loads, stores, and instruction fetches will be blocked for
+  the misconfigured privilege level(s).)
+* `mwiddeleg`: this register determines the WIDs that S-mode is allowed to
+  assign to U-mode, i.e. those WIDs that can (or should) be set in `slwid`. It
+  makes sense for `mwiddeleg` to be a strict subset of `mwidlist` (as nothing
+  unset in `mwidlist` can be expected to work), but there is no need to enforce
+  this at the register level.
+
+==== Run-time discovery
+
+From the ISA perspective, WID is simply an ID, it does not directly refer to
+any resource of the core, so the number of WIDs that can be used and expressed
+is constrained only by;
+
+* the number of bits that can be signaled on outgoing transactions,
+* the number of WID bits implemented in cache tags for any cache in the
+  transaction path, and
+* the number of bits implemented in registers that serve as WID bitmasks.
+
+__Note: this should not be confused with the range of WIDs supported by an
+IOPMP input or any other WID-aware target on the bus - they may well use input
+WIDs as indices into a finite array of resources, and in particular those
+arrays might not have power-of-two geometry. Here we are only concerned with
+the range of WIDs that the core can assign to privilege levels, and from there,
+the range of WIDs that can be expressed on outgoing transactions. It is a
+hardware configuration task to ensure that transaction targets can absorb the
+range of WIDs they claim to support, and it is a software configuration task to
+not use any WIDs that might be expressible by the ISA but not supported by the
+targets of outgoing transactions!__
+
+The ISA inherently limits the number of supported WIDs to 32, as there are
+32-bit registers that serve as WID bitmasks (`mwidlist`, `mwiddeleg`,
+`mwidseclist`). However, the actual ISA-supported range of WIDs may be a
+smaller power of 2. (It may even be just 2.)
+
+Software/firmware can discover the supported widths by writing a register with
+all ones and reading the value back - the unsupported bits will read back as
+zero.
+
+* If the CSR is a WID-holding register (`mwid`, `mlwid`, `slwid`), the result
+  will determine the supported WID-width in bits, the range of WIDs will
+  therefore be from 0 to 2^WIDwidth^-1, inclusive.
+* If the CSR is a WID-bitmask-holding register (`mwidlist`, `mwiddeleg`,
+  `mwidseclist`), the result will determine the range of WIDs itself, and this
+  should be a power of 2.
+
+The implementation must ensure that the two methods for determing the valid WID range are
+consistent with one another, i.e. width(WIDBITMASK) == 2^width(WID)^
+
+=== Decision logic
+
+The following subsections show the flow for determining whether to accept or
+reject a load/store/fetch transaction. Note that in all cases where the
+decision is to reject the transaction, the fault type chosen for the rejection
+will be derived from the transaction type:
+
+* a load will trigger a "Load access fault"
+* an instruction fetch will trigger an "Instruction access fault"
+* a store will trigger a "Store/AMO access fault"
+
+In the cases where the decision is to accept the transaction, this decision
+logic also determines the WID and NS values with which to tag the outgoing
+transaction.
+
+[[effectiveWIDSampling]]
+==== Effective WID sampling
+
+The WID of each privilege level is determined by the following registers;
+....
+    M-mode --> mwid
+    S-mode --> mlwid
+    U-mode --> slwid
+....
+__Note however that writes to these WID registers do not take effect
+immediately, rather they are sampled by the implementation during
+[.underline]#potentially# privilege-level-changing events, specifically by all
+MRET and SRET instructions and across all traps/interrupts. (I.e. the values
+are resampled at all points where the privilege level [.underline]#could#
+change, whether or not the privilege level [.underline]#actually# changes.)__
+
+The justification for this sampling behavior, rather than register writes
+having immediate effect, is the case where M-mode is preparing to function with
+a Non-Secure `mwid`. Consider, if M-mode could change `mwid` from a Secure WID
+to a Non-Secure WID and have it take effect immediately, the instruction
+fetching would fail on the very next instruction (Secure WIDs cannot fetch from
+Non-Secure regions, and Non-Secure WIDs cannot fetch from Secure
+regions.footnote:[In fact, Secure WIDs _should_ not be able to fetch from
+Non-Secure regions, as is the case with TrustZone implementations, but we leave
+the enforcement of that constraint to the ePMP configuration.]) But due to
+these sampling semantics, M-mode can set `mwid` to a Non-Secure WID and then
+MRET to an instruction address that is Non-Secure - this triggers the sampling
+of the Non-Secure WID for it to take effect, which by that point will not fail
+to fetch instructions because the instructions after the MRET are being pulled
+from a Non-Secure region. For this to work, M-mode must ensure that no
+interrupts occur between the modification of `mwid` and the MRET, probably by
+disabling interrupts before the modification and reenabling them after the
+MRET.
+
+* The "effective WID" is the WID of the current privilege level (as last
+  sampled from the corresponding CSR).
+
+==== Effective security state (NS)
+
+* The security state of a privilege level is determined by using that privilege
+  level's WID as an index into the `mwidseclist` register (0="Secure",
+  1="Non-Secure").
+* The "effective security state" is the security state of the current privilege
+  level.
+
+==== TrustZone privilege constraints
+
+* If the hart is in S-mode, the security state of S-mode is Secure, and the
+  security state of M-mode is Non-Secure, reject transaction.
+* If the hart is in U-mode, and the security states of S-mode and U-mode don't
+  match, reject transaction.
+
+==== WorldGuard accept/reject
+
+* If the hart is in U-mode, and if the effective WID is not set in `mwiddeleg`,
+  reject transaction.
+* If the effective WID is not set in `mwidlist`, reject transaction.
+* If the transaction is accepted, the effective WID is signaled on the outgoing
+  transaction.
+
+[[trustzoneAcceptReject]]
+==== TrustZone accept/reject
+
+This decision involves comparing the "effective security state" against the
+security attribute of the physical address range being accessed, which is a PMA
+(Physical Memory Attribute). This decision also determines, if the transaction
+is accepted, whether the outgoing transaction should be signaled as Secure or
+Non-Secure. In the following description we are assuming this logic is
+implemented as part of the ePMP, though implementations are free to provide
+these behaviors through other means.
+
+* ePMP will add the effective security state to its inputs (alongside current
+  inputs: the current privilege level, the address range, and the access type).
+* ePMP will add the TrustZone PMA (NS-Attr) to the list of memory attributes it
+  looks up for the physical address range.
+* The NS-Attr memory attribute supports three options for the comparison with
+  the effective security state and for determining the NS-Req state for the
+  resulting transaction (if accepted).
+
+[%header,cols="1,3,2,2,2"]
+|===
+| NS-Attr | NS-Attr name | Permitted Non-Secure Requests | Permitted Secure Requests | Resulting NS-Req for transaction
+
+| `00b` | *Secure Memory* | None | Read, Write, Execute | Secure
+| `01b` | *Secure Private Non-Secure Memory* | None | Read, Write, Execute footnote:[As mentioned previously, a Secure instruction fetch request to a Non-Secure memory should probably be rejected. (That's what the TrustZone ISA does.) But given that the ePMP already supports separate Read/Write/eXecute permission attributes, we defer this decision to the configuration of ePMP.] | Non-Secure
+| `10b` | Unused/reserved/illegal | None | None | Fault
+| `11b` | *Non-Secure Memory* | Read, Write, Execute | Read, Write | Non-Secure
+|===
+
+=== Register map
+
+==== Summary
+
+The following table contains both the CSRs proposed by the WG specification and
+those added by this proposal.
+
+[%header,cols="2,2,2,3"]
+|===
+| Register | Access | Proposed offset | Description
+
+| `mwid` | RW for M until locked | ??? | WID for M-mode
+| `mwidlist` | RW for M until locked | ??? | Set of allowable WIDs
+| `mwidseclist` | RW for M until locked | ??? | Set of Non-Secure WIDs
+| `mlwid` | RW for M | `0x390` | WID for S-mode
+| `mwiddeleg` | RW for M | `0x748` | Set of delegated WIDs
+| `slwid` | RW for S | `0x190` | WID for U-mode
+|===
+
+The following sections provide more detail on each of these registers.
+
+==== `mwid`: WID for M-mode
+
+[%header,cols="1,1,5"]
+|===
+| Name | Bits | Description
+| L | 31
+| Lock bit. Write 1 to lock register (as read-only) until next reset
+| WID | 30:0
+| WID that M-mode operates in. Writable only up until L has been written 1.
+Only Ceil(Log~2~(NWorlds)) LSBs are writable, others are read-only zero.
+|===
+
+This register as well as `mwidlist` and `mwidseclist` become locked once the L
+bit is set, after which the registers are read-only (and so `mwid` can't be
+unlocked) and writes are silently dropped. The locking is only released when
+the block is reset. When unlocked, all writes to these registers commit
+atomically.
+
+Each CSR write to `mwid` updates both L and WID fields together. When writing 1
+to `mwid.L`, the lock on all 3 registers takes effect after the write.
+
+Only the lower Ceil(Log~2~(NWorlds)) bits of WID are implemented. The remaining
+are read-only zero.
+
+==== `mwidlist`: Set of allowable WIDs
+
+[%header,cols="1,1,5"]
+|===
+| Name | Bits | Description
+| MASK | 31:0
+| Bit-vector indicating which WIDs may be used by this hart. LSB corresponds to
+WID 0, `NWorlds` LSBs are used, others are read-only zero.
+|===
+
+This register is locked if and only if the `mwid` register is. The `mwidlist`
+CSR ignores writes when locked by `mwid`. CSR writes to `mwidlist` and `mwid`
+are ordered by the hardware in the same manner as writes to ePMP registers.
+When necessary, software can enforce a specific ordering between a CSR write
+and other instructions with an appropriate FENCE.
+
+Only the lower NWorlds bits of MASK are implemented. The remaining are
+read-only zero.
+
+[[mwidseclist]]
+==== `mwidseclist`: Set of Non-Secure WIDs
+
+[%header,cols="1,1,5"]
+|===
+| Name | Bits | Description
+| MASK | 31:0
+| Bit-vector indicating which WIDs should be considered "Non-Secure", in the TZ
+sense. LSB corresponds to WID 0, `NWorlds` LSBs are used, others are read-only
+zero.
+|===
+
+This register is locked if and only if the `mwid` register is. The
+`mwidseclist` CSR ignores writes when locked by `mwid`. CSR writes to
+`mwidseclist` and `mwid` are ordered by the hardware in the same manner as
+writes to ePMP registers.  When necessary, software can enforce a specific
+ordering between a CSR write and other instructions with an appropriate FENCE.
+
+Only the lower NWorlds bits of MASK are implemented. The remaining are
+read-only zero.
+
+The polarity is such that a WID is considered "Secure" if its corresponding bit
+in `mwidseclist` is 0, or "Non-Secure" if its corresponding bit is 1.
+
+==== `mlwid`: WID for S-mode
+
+[%header,cols="1,1,5"]
+|===
+| Name | Bits | Description
+| WID | 31:0
+| WID that S-mode operates in. Only Ceil(Log~2~(NWorlds)) LSBs are used, others
+are read-only zero.
+|===
+
+This register does not lock so it remains writable to M-mode at all times.
+
+Only Ceil(Log~2~(NWorlds)) bits of WID are implemented. The remaining are
+read-only zero.
+
+Writes to `mlwid` have the same ordering semantics as writes to the ePMP CSRs
+with respect to when a write to `mlwid` takes effect.
+
+==== `mwiddeleg`: Set of delegated WIDs
+
+[%header,cols="1,1,5"]
+|===
+| Name | Bits | Description
+| MASK | 31:0
+| Bit-vector indicating which WIDs may be written to `slwid` by S-mode.
+|===
+
+This register does not lock so it remains writable to M-mode at all times.
+
+Only the lower NWorlds bits of MASK are implemented. The remaining are
+read-only zero.
+
+==== `slwid`: WID for U-mode
+
+[%header,cols="1,1,5"]
+|===
+| Name | Bits | Description
+| WID | 31:0
+| WID that U-mode operates in. Only Ceil(Log~2~(NWorlds)) LSBs are used, others
+are read-only zero.
+|===
+
+This register does not lock so it remains writable to S-mode at all times.
+
+Only Ceil(Log~2~(NWorlds)) bits of WID are implemented. The remaining are
+read-only zero.
+
+Writes to `slwid` have the same ordering semantics as writes to the ePMP CSRs
+with respect to when a write to `slwid` takes effect.
+

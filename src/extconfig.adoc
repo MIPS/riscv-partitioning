@@ -1,0 +1,67 @@
+:imagesdir: ./images
+
+[[extconfig]]
+== External configuration
+
+In many cases RISC-V cores are represented as a subsystem that is placed into a
+host SoC, and in such use-cases it is often desirable to be able to configure
+the security framework of that subsystem during a secure-boot phase, prior to
+the subsystem executing any workload. It can also happen later on that the
+subsystem is reset, perhaps with the requirement to reinitialize. In both
+cases, we can see that there is a Root of Trust (hereafter "RoT") that is
+"external" to the subsystem that should be able to impose its chosen security
+configuration on the subsystem.
+
+In all such cases we assume:
+
+* There is a means to expose a selected subset of per-hart CSRs and per-device
+  registers to the external environment for partitioning control.
+* This external control may be blocked (or become read-only) when the
+  cores/harts/devices they control are executing/enabled. (This assumption can
+  simplify implementation and verification.)
+* If there is value to making a setting available for external control, it
+  follows that the control in question should be "lockable", such that settings
+  become immutable before the affected harts execute (and/or the affected
+  devices are enabled). The converse is true also (if a configuration is
+  lockable, it makes sense for it to be configurable by external control.)
+* External configuration may be optional, in that the subsystem harts may
+  perform their own self-configuration.
+** Alternatively, for implementations intended to always be externally
+   configured, these configuration registers may always be read-only to the
+   harts.
+
+=== WorldGuard
+
+As we will see later, the WorldGuard registers (augmented by this
+specification) divide logically into two groups, _"Lockable partitioning
+registers"_, and _"Run-time manipulable registers"_.
+
+__It is the former, the so-called lockable partitioning registers, that should
+be exposed for external control.__
+
+=== ePMP
+
+ePMP also contributes to the system partitioning, through the ability to write
+(and lock) rules that govern even M-mode's access to the system's addressable
+resources. __The ePMP registers should be exposed for external control.__
+
+=== eIOPMP
+
+eIOPMP is, at its core, a look-aside firewall component with a set of
+configuration registers. It may also be packaged as a bus gasket, which may add
+to the configuration interface (otherwise the look-aside is presumably embedded
+within another component and its register map)footnote:[There are interconnects
+that can incorporate look-aside components of this sort. Or it may be
+integrated into an IOMMU, DMA engine, memory controller, ...]. It is an
+integration-level decision where an eIOPMP instance's registers appear and how
+they are exposed.
+
+Though some of the IOPMP register settings advertise their own locking
+mechanisms, they only provide for a partial lockdown of the
+partitioning-relevant configuration. In this specification, __we provide an
+additional lock field that locks down the eIOPMP configuration interface as a
+whole (with the exception of the "Error capture registers").__
+
+__The whole eIOPMP configuration interface should be exposed for external
+control.__
+

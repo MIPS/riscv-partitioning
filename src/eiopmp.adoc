@@ -1,0 +1,457 @@
+:imagesdir: ./images
+
+[[eiopmp]]
+== eIOPMP
+
+It is assumed the reader is familiar with the RISC-V IOPMP Architecture
+Specification (v0.7), upon which this section is based. It specifies a firewall
+look-aside component that can look up and apply rules to bus transactions, in a
+manner comparable to the ePMP model of the RISC-V hart.
+
+eIOPMP is a proposed generalization of the IOPMP design, and so it is described
+as a series of modifications to the IOPMP definition, rather than as a
+self-contained definition. The resulting eIOPMP can be instantiated in a
+variety of ways, one of which corresponds to the original IOPMP definition, and
+some of which correspond to hardware platform components described in the WG
+specification and whitepaper.
+
+=== Enforcement vs Gasket
+
+It is useful to distinguish between two concepts when talking about eIOPMP.
+
+. An enforcement component that looks up and applies rules to memory access
+  requests, which;
+.. returns an accept/reject (i.e. pass/fail) decision for each request.
+.. may extend/replace metadata in the request, ie. "WID marking" (modifying the
+   WID) or modifying the NS-Req attribute.
+.. is agnostic to the bus interface (and/or input/output devices), as input and
+   output are represented in an abstract form (even if they align 1:1 with sets
+   of AXI5 fields).
+.. exposes a configuration interface via memory-mapped registers.
+. A bus gasket that plugs in-line between initiator and target interfaces on
+  some hop of the interconnect. This gasket instantiates the enforcement
+  component to enforce rules on requests passing through the gasket.
+.. Gaskets may take multiple forms depending on bus protocol (e.g. AXI, APB,
+   ...) and use-case (e.g. source-side marker, target-side firewall, ...).
+.. Gaskets may have their own controls and configuration interface, over and
+   above that of the embedded enforcement component.
+
+The IOPMP specification primarily addresses the first concept, and that is the
+concept we are primarily concerned with also as we extend it to eIOPMP. There
+exist interconnects that provide interfaces for firewall look-aside components
+and so this enforcement component may suit such cases without the need for a
+bus gasket wrapper. Similarly, there may be other IP blocks that could
+integrate an eIOPMP enforcement component and that can better optimize
+throughput and/or amortize latency than a generic gasket wrapper could (e.g. in
+a faster clock domain, performing permission checks in parallel with related
+activity - such as in an IOMMU, as part of a DMA engine, or in a RAM
+controller, ...).
+
+The rest of this section on eIOPMP will deal with the enforcement component,
+except for a final subsection in which we propose some rudimentary gasket
+wrappers.
+
+=== Modifications to IOPMP
+
+==== RRID == WID
+
+First observation is that the IOPMP definition conjures into existence a new
+identifier, called the Request Role ID or “RRID”. This is provided by the
+initiating side to IOPMP’s input, together with the desired transaction
+details, to “identify a system-defined security context”.
+
+Second observation is that the IOPMP definition proposes a “Cascading IOPMP”
+model in which an IOPMP output could be tagged with a new RRID, which in turn
+becomes the input to another, downstream IOPMP instance.
+
+The first observation hints that RRID serves the same function as WID, and that
+they may be unrelated definitions only because the specifications (WG and
+IOPMP) are defined independently of one other. The second observation hints
+that the equivalence between RRID and WID is perhaps even obligatory, because
+the tagging of transactions in a WG-enabled topology is done with WIDs, and so
+a cascaded IOPMP’s input would be consuming WID values as its RRID input.
+
+As we will see, eIOPMP’s marking capabilities allow it to translate
+transactions from an input WID space to a different, output WID space. So even
+in the case where the IOPMP’s input is directly fed from a device, where (let’s
+say) the RRID might be a zero-based index representing a channel of the device
+– those RRIDs still form an “input WID space” if we choose to think of them
+that way. “RRID” is simply the name given to the input parameter that serves as
+an index into the IOPMP’s first table structure, and it is defined in a
+specification that is independent of WorldGuard. Being an index into a table
+structure will still be its purpose from the IOPMP’s perspective, even if we
+choose to call that index “WID” instead.
+
+Because of the benefits of doing so, and because there is no loss of generality
+in doing so, and because it may even be necessary to do so;
+
+****
+eIOPMP mandates that RRID be assumed synonymous with WID.
+****
+
+==== Zero entry degeneracy
+
+The IOPMP definition contains multiple tables that can be instantiated with
+variously-configured sizes, as software can query the instance about its
+geometry at run-time. As such, it is in principle possible to configure the
+IOPMP with zero-sized tables, which would imply that the IOPMP checker logic
+could be compiled out – there’ll be nothing to check against. (This is required
+for the “wgMarker” function, as described in WorldGuard documentation.)
+
+However, the IOPMP spec follows a whitelisting model, inferring that an IOPMP
+with zero-sized tables can never “match” anything, and therefore all
+transactions should be rejected!
+
+****
+eIOPMP mandates that, when `HWCFG1.entry_num` is zero, all transactions are
+accepted rather than rejected.
+****
+
+==== Input
+
+eIOPMP assumes its input to consist of;
+
+* the target address range
+* the requested access type
+* the RRID/WID parameter
+* optionally, the NS-Req state of the request. If the eIOPMP is not configured
+  to consume this field as part of the request, then the `widseclist` device
+  register is used to derive the NS state from the RRID/WID parameter (similar
+  to the `mwidseclist` CSR, see <<mwidseclist>>).
+
+As a look-aside model, it does not process any request data (in the case of
+writes) nor response data (in the case of reads/fetches).
+
+==== Output
+
+eIOPMP assumes its output to consist of;
+
+* the accept/reject decision
+* if accepted;
+** the RRID/WID parameter
+** the NS-Req state of the request
+
+==== Match-based output WIDs
+
+IOPMP implements a global output WID override with the `HWCFG2.rrid_transl`
+register field. We will also support WID override on a per-match basis. If the
+IOPMP entry that determines the transaction's outcome has enabled a WID
+override, that takes precedence over the global output WID.
+
+****
+eIOPMP SHOULD allow each IOPMP entry to have an optional WID override, that
+modifies the WID of any matching transactions.
+****
+
+==== Configuration locking
+
+The IOPMP specification already specifies some granular controls that allow
+lockdown (until reset) of some register values. This proposal adds another, to
+allow the eIOPMP configuration to be locked as a whole (with the exception of
+the "Error capture registers").
+
+****
+eIOPMP MUST implement a sticky-until-reset register field that renders all
+eIOPMP configuration registers read-only, excepting the "error capture
+registers".
+****
+
+For the existing IOPMP-defined locking registers;
+
+* `MDLCK[H]`, `MDCFGLCK`, `ENTRYLCK`, are all implemented as documented.
+  However, these registers will not be updated when the entire eIOPMP
+  configuration is locked, they will continue to appear to lock the ranges and
+  subsets that they lock, even if apparently "unlocked" elements are in fact
+  locked because the whole configuration is locked.
+* `HWCFG0.rrid_transl_prog` is implemented as documented. In an eIOPMP instance
+  with no marking capability, this field (and `HWCFG0.rrid_transl_en`) will be
+  wired to 0. This register field will not be updated when the entire eIOPMP
+  configuration is locked.
+
+=== Parallelism and channels
+
+The eIOPMP enforcement component implements a register set for configuring the
+desired filtering behavior. For a given component instance (and its register
+set, and from there, its rule set), it may be desirable to have multiple
+engines/pipelines to perform filtering in parallel, as an alternative to
+instantiating multiple components each with their own register set (which is
+more expensive).
+
+. Performance requirements may dictate the need for parallelism.
+. Separate channels (e.g. AXI has separate AW and AR command channels) may
+  require their own pipelines to sustain throughput but may not require a
+  distinct rule-set (IOPMP rules already provide a means to distinguish between
+  RWX access types).
+
+****
+eIOPMP SHOULD provide the ability to instantiate multiple processing pipelines,
+each with its own input and output interfaces, for a given register set.
+****
+
+=== Behavior clarifications
+
+The key new feature of eIOPMP (over the base IOPMP definition) that requires
+behavioral clarification is its capability of having match-specific WID
+overrides. This gives rise to a conundrum with the so-called "non-priority"
+IOPMP entries.
+
+==== Match-specific WID overrides with non-priority entries
+
+Recall that IOPMP has a register field `HWCFG2.prio_entry` that partitions the
+available set of IOPMP entries into priority entries and non-priority entries.
+When the checker performs a lookup on the IOPMP entry array for a given address
+range, the IOPMP guarantees to correctly match on the first corresponding
+priority entry, and only that entry, if any such match exists. That defines
+what happens if more than one priority entry match against the address range;
+the lowest-index match wins out. That entry specifies the permitted access
+modes that will then be applied. (E.g. two different priority entries may
+specify different access modes, so it matters which of the entries is matched.)
+
+There is no such ordering guarantee for the non-prioritized entries. (The IOPMP
+spec explains that the concept of having non-prioritized entries is as a
+performance/area consideration, because it allows for batches of entries to be
+compared in parallel rather than in strict sequential order.) So, if an address
+range matches on multiple non-prioritized entries (e.g. with different access
+modes specified in each), the result acts as the “union” of the matching
+entries. However, the addition of a WID override to the IOPMP entries does not
+lend itself to any canonical interpretation of a "union", so it raises the
+question of how the device will behave if there are multiple matching,
+non-prioritized entries with their own WID overrides. This could be classified
+as an illegal (mis)configuration, or some other interpretation might be made in
+such a case.
+
+****
+eIOPMP implementations MUST specify the behavior of match-specific WID overrides
+when multiple, non-prioritized entries are matched.
+****
+
+=== Registers
+
+==== Summary
+
+Chapter 5 of v0.7 of the IOPMP specification contains a summary table of device
+registers. The following is an excerpt, in order to show eIOPMP additions and
+modifications (which are *emphasized*).
+
+[%header,cols="1,1,1"]
+|===
+| Offset | Register | Changes
+3+^| [...]
+| `0x0010` | HWCFG2 | No change
+| `0x0014` | ENTRYOFFSET | No change
+| `0x0018` | *HWCFG3* | *New register*
+| `0x001c` | *WIDSECLIST* | *New register*
+3+^| [...]
+| `ENTRYOFFSET + (i*0X10)` | ENTRY_ADDR(i) | No change
+| `ENTRYOFFSET + (i*0X10) + 0x4` | ENTRY_ADDRH(i) | No change
+| `ENTRYOFFSET + (i*0X10) + 0x8` | *ENTRY_CFG(i)* | *New fields defined*
+| `ENTRYOFFSET + (i*0X10) + 0xc` | ENTRY_USER_CFG(i) | No change
+3+^| [...]
+|===
+
+It should be noted that a new register field, `HWCFG3.prog`, implements a sticky
+(till reset) lockdown of the entire eIOPMP configuration, i.e. rendering all
+eIOPMP registers read-only (except for the "Error capture registers").
+
+==== `HWCFG3: 0x0018` (new)
+
+[%header,cols="3,2,2,2,8"]
+|===
+| Field | Bits | R/W | Default | Description
+| chk_addr | `0:0` | R | IMP
+| Indicates whether address-checking is performed.
+| prog | `1:1` | W1CS | IMP
+| The lock-until-reset semantics that are documented for
+`HWCFG0.rrid_trans_prog` apply here, but to the whole eIOPMP configuration (not
+just to a specific register or field), with the exception of the "Error Capture
+Registers".
+| rsv | `31:2` | ZERO | 0 | Reserved, wired to zero.
+|===
+
+* If `chk_addr` is zero, checking always matches on the first IOPMP entry
+  consulted (for the input's RRID/WID).
+* The new `prog` field locks down the entire eIOPMP configuration except for the
+  Error Capture Registers. This uses the semantics documented for
+  `HWCFG0.rrid_transl_prog` in the IOPMP specification: the field defaults to 1
+  out of reset (the configuration is unlocked), supports a write-1-to-clear
+  semantic, and is sticky to 0 (the configuration is locked).
+
+==== `WIDSECLIST: 0x001c` (new)
+
+[%header,cols="3,2,2,2,8"]
+|===
+| Field | Bits | R/W | Default | Description
+| mask | `31:0` | RW until locked | IMP
+| Bit-vector indicating which WIDs should be considered "Non-Secure", in the TZ
+sense. LSB corresponds to WID 0, `NWorlds` LSBs are used, others are read-only
+zero.
+|===
+
+* This register only exists if the eIOPMP is configured without an "NS" input
+  signal.
+* `mask` represents the same information as the `MASK` field in the
+  `mwidseclist` CSR (see <<mwidseclist>>).
+
+==== `ENTRY_CFG(i): ENTRYOFFSET + (i*0x10) + 0x8` (modified)
+
+[%header,cols="3,2,2,2,8"]
+|===
+| Field | Bits | R/W | Default | Description
+| r | `0:0` | WARL | DC | No change
+5+^| [...]
+| sexe | `10:10` | WARL | 0 | No change
+| *wid_en* | `11:11` | WARL | 0
+| *New field:* causes matching transactions to have `wid` override the RRID/WID
+field of the request.
+| *ns* | `13:12` | WARL | 0
+| *New field:* determines the TZ "NS-Attr" attribute for the address range.
+See <<trustzoneAcceptReject>> for the behavior of these values.
+| *rsv* | `15:14` | ZERO | 0
+| *Modified:* shrunk, used to be bits `31:11`.
+| *wid* | `31:16` | WARL | DC
+| *New field:* WID override value, if `wid_en` is set.
+|===
+
+* `wid_en` determines whether a WID-override, using `wid` as the value, will
+  apply to transactions that match on this IOPMP entry.
+* The `ns` field determines how NS-Req (as provided by input or as determined
+  via the `widseclist` register mask) is treated, whether the transaction
+  should be accepted or rejected, and if accepted, what NS-Req field the
+  resulting transaction should carry. I.e. `ns` provides the NS-Attr attribute.
+  This follows the same decision logic as described in <<trustzoneAcceptReject>>.
+
+=== Hardware configuration
+
+==== High-level configuration options
+
+There will be many small configuration options associated with an eIOPMP instance. In the following exercise we define capabilities that represent functional groupings of many underlying options.
+
+* *Checker* – this capability indicates whether any checking at all is
+  supported. Without this capability, all 3 tables (SRCMD, MDCFG, IOPMP entry
+  array) disappear, as does all checking logic, and all that remains is the
+  default treatment of bus transactions, all of which are accepted.
+** *cAddress* – this sub-capability of Checker indicates whether any address
+   checking is supported. Without this capability, the checking logic will
+   match on the first IOPMP entry consulted for the given RRID/WID. (If the
+   IOPMP model is such that multiple IOPMP entries referenced for the given
+   RRID/WID, the lowest-valued index is the only one that will be considered.)
+   Importantly, without this capability, the physical addresses in the IOPMP
+   can be compiled out, for a noticeable footprint reduction in checker logic.
+* *Marker* – this is the capability of marking an outgoing transaction with a
+  (potentially different) WID. Without this capability, outgoing transactions
+  always carry the same RRID/WID they arrived with. This capability is
+  complementary to Checker – per-IOPMP-entry marking is supported if and only
+  if both Checker and Marker are supported.
+
+==== High-level application profiles
+
+The IOPMP specification proposes a usage that situates it directly between a
+peripheral’s initiator port client and the interconnect initiator port, i.e. it
+operates as an initiator port for the peripheral, and it is primarily
+functioning as a checker but with partial marker capability. The original
+definition of IOPMP could be called an application profile of eIOPMP, in that
+its capabilities determine a number of high-level configuration options and
+give the instance a particular “application”, but without specifying the
+numerous other configuration options that influence the geometry and details of
+the resulting instance. (I.e. table sizes, etc.)
+
+For its part, the WorldGuard specification proposes a generic checker model
+with few details, while a separate WorldGuard technical paper proposes a
+generic marker model also (with even fewer details). Both use-cases of eIOPMP
+could be called application profiles too.
+
+It is worthwhile presenting a set of such application profiles in terms of the
+high-level capabilities defined in the previous section – this provides a way
+to reduce the complexity of verification and testing, by intentionally limiting
+oneself to “only supported application profiles”, and by the same stroke
+provide guidance to customers on the meaningful use-cases for the product.
+
+[cols=4*]
+|===
+.2+^.>| *Application* 2+^| *Checker* .2+^.>| *Marker* | ^| *cAddress*
+^| marker | | ^.^| X
+^| checker ^| X ^| X |
+^| multimarker ^| X | ^| X
+^| remarker ^| X | ^| X
+^| memfilter ^| X ^| X |
+^| IOPMP ^| X ^| X ^| ½
+|===
+
+==== "marker"
+
+This application profile fits the description of a “wgMarker” per the WG
+documentation. Its role is to take input directly from a peripheral initiator
+port and mark all its outgoing transactions with a configurable WID. If the
+peripheral is a single entity, no Checker capability is required. This is the
+smallest possible instantiation of an eIOPMP.
+
+==== "checker"
+
+This application profile fits the description of a “wgChecker” per the WG
+documentation. Its role is to take input directly from a system interconnect
+target port and perform WG-aware checking before forwarding accepted
+transactions directly to a WG-unaware target peripheral. The myriad choices
+regarding the Checker capability are left entirely open, including whether
+cAddress is required – those decisions depend largely on the complexity of the
+device the checker is sitting in front of. No Marker capability is required.
+
+==== "multimarker"
+
+If multiple peripheral instances use the same initiator port but need the
+ability to participate in different worlds, a slightly more advanced marker is
+required, called a multimarker. This instance would be configured with a
+“reduced checker”, which has the Checker capability without the cAddress
+capability (it can only check WIDs, which is all that’s required). As such the
+SRCMD table and IOPMP entry array each need 1 entry per peripheral input.
+
+==== "remarker"
+
+The idea of a remarker’s job is to bridge from a local cluster of WG-aware
+cores and peripherals, that may be using its own private “WID namespace”, to a
+probably larger interconnect. The larger topology may have a WID namespace that
+is larger, and so the remarker exists to convert low-valued, private WIDs to
+their globally unique equivalents. Or the larger topology may have
+coarser-grain separations in mind (e.g. secure vs non-secure) and so the
+remarker is there to compress the range of WIDs from the private namespace into
+what they should act as out on the global namespace.
+
+The remarker is similar to multimarker in composition, except that the size of
+the tables is provisioned differently. The SRCMD table and IOPMP entry array
+need enough space to demux all the expected WIDs from the input. No cAddress
+capability is required.
+
+==== "memfilter"
+
+The memfilter application is to provide generic, WG-aware access-control to a
+memory interface. This is the model where the SPS extension is expected to
+yield dividends, allowing multiple worlds to share memory regions
+(deduplication of read-only shared data, IPC, etc) while selectively limiting
+which worlds can have write access (without burning through extra IOPMP entries
+for each such region).
+
+The choice of geometry for memfilter is almost entirely circumstantial, it
+should be configured for the expected worst-case. The table sizes must cope
+with the expected level of WID separation, region fragmentation, use-case
+complexity, and so forth.
+
+==== "IOPMP"
+
+This application profile is intended purely for the sake of completion, to
+indicate that eIOPMP is a superset of IOPMP by showing how it can be used to
+implement the IOPMP as it is defined in its own spec. Unlike the
+previously-mentioned application profiles, there is no expectation that this
+application profile represents a common use-case, per se.
+
+The only notable aspect of this profile’s configuration is the “½” symbol in
+the application profile table, regarding the Marker capability. This is to
+indicate that the original IOPMP definition supports the Marker capability only
+for the default output marker – there is no support (without eIOPMP
+enhancements) for match-specific marking.
+
+=== Bus gaskets
+
+This is not a priority consideration as there are, as yet, no specific eIOPMP
+applications specified. Initial deliverables for eIOPMP are expected to only
+require the core look-aside component, which can be integrated into
+interconnects that support look-asides (citation?) and/or domain-specific uses.
+

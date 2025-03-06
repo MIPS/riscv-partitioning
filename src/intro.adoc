@@ -2,10 +2,23 @@
 
 == Introduction
 
-This document describes a holistic partitioning solution for RISC-V-based
-platforms, based on (and by enhancing);
+This document describes a holistic solution for securely partitioning workloads
+on RISC-V-based platforms, based on (and by enhancing);
 
-* WorldGuard, per the publicly-available v0.4 specification from SiFive
-* TrustZone(tm) interoperability, using AXI-based signaling
+* WorldGuard, per the publicly-available v0.4 specification
+* TrustZone(tm) interoperability, assuming AXI signalling
 * ePMP, per the RISC-V privileged specification
 * IOPMP, per the v0.7 specification
+
+This solution was arrived at by MIPS as part of its security architecture
+development and it is hoped that it might provide a general solution for the
+RISC-V ecosystem, hence the contribution of this document.
+
+The goals of this document are;
+
+* to describe how these technologies can be adapted to work together in a
+  complementary manner,
+* to permit review and refinement by RISC-V stakeholders, and
+* to facilitate the integration of enhancements into their respective upstream
+  projects in a coordinated fashion.
+

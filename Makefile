@@ -12,76 +12,81 @@
 # This Makefile is designed to automate the process of building and packaging
 # the Doc Template for RISC-V Extensions.
 
-DOCS := \
-	riscv-partitioning.adoc
+# Change these if you want;
+# - DOC is output name and src/$(DOC).adoc is the primary input
+# - DESTDIR is created/destroyed, choose it accordingly
+# - for f in FORMATS, $(ASCIIDOCTOR_$f) is a build command to run
+# - CONTIMG is the <img> name passed to docker-run
+DOC := riscv-partitioning
+#DESTDIR := ${PWD}/build
+DESTDIR := /mnt/c/Users/$(shell whoami)/Downloads/$(DOC)
+FORMATS := PDF HTML
+CONTIMG := riscvintl/riscv-docs-base-container-image:latest
 
-ifneq ($(SKIP_DOCKER),true)
-	DOCKER_CMD := docker run --rm -v ${PWD}:/build -w /build \
-	riscvintl/riscv-docs-base-container-image:latest \
-	/bin/sh -c
-	DOCKER_QUOTE := "
-	DO_CLEAN := $(DOCKER_CMD) $(DOCKER_QUOTE) rm -rf /build/build/* $(DOCKER_QUOTE)
-else
-	DO_CLEAN := rm -rf build/
-endif
-
-SRC_DIR := src
-BUILD_DIR := build
-
-DOCS_PDF := $(DOCS:%.adoc=%.pdf)
-DOCS_HTML := $(DOCS:%.adoc=%.html)
-
-XTRA_ADOC_OPTS :=
+# Change these if you must;
 ASCIIDOCTOR_PDF := asciidoctor-pdf
 ASCIIDOCTOR_HTML := asciidoctor
 OPTIONS := --trace \
-           -a compress \
-		   -a allow-uri-read \
-           -a mathematical-format=svg \
-           -a pdf-fontsdir=docs-resources/fonts \
-           -a pdf-theme=docs-resources/themes/riscv-pdf.yml \
-           $(XTRA_ADOC_OPTS) \
-		   -D build \
-           --failure-level=ERROR
-REQUIRES := --require=asciidoctor-diagram \
-            --require=asciidoctor-mathematical \
-			--require=asciidoctor-kroki
+	-a compress \
+	-a allow-uri-read \
+	-a mathematical-format=svg \
+	-a pdf-fontsdir=/inputs/docs-resources/fonts \
+	-a pdf-theme=/inputs/docs-resources/themes/riscv-pdf.yml \
+	-D /outputs \
+	--failure-level=ERROR \
+	--require=asciidoctor-diagram \
+	--require=asciidoctor-mathematical \
+	--require=asciidoctor-kroki
+TOUCHFILE := $(DESTDIR)/buildcmd
 
-.PHONY: all build clean build-container build-no-container build-docs
+# Change these at your peril;
+# - PWD is mounted-read-only, so docker's blast-radius is DESTDIR
+# - PWD/src/$(DOC).adoc is the primary source file
+# - Output is made dependent on all files inside PWD/src/
+DOCKER_QUOTE := "
+BUILDCMD := docker run --rm \
+	-v ${PWD}:/inputs:ro \
+	-v $(DESTDIR):/outputs \
+	$(CONTIMG) /bin/sh -c \
+	$(DOCKER_QUOTE) \
+	$(foreach e,$(FORMATS),$(ASCIIDOCTOR_$(e)) $(OPTIONS) /inputs/src/$(DOC).adoc && )true \
+	$(DOCKER_QUOTE)
+CLEANCMD := docker run --rm \
+	-v $(DESTDIR):/outputs \
+	$(CONTIMG) /bin/sh -c \
+	$(DOCKER_QUOTE) \
+	rm -rf /outputs/* \
+	$(DOCKER_QUOTE) && rmdir $(DESTDIR)
+DEPS := $(shell find ${PWD}/src -type f)
+
+# Remove the touchfile if any aspect of the build command has changed (FORMATS,
+# asciidoctor options, container image, ...).
+ifneq (,$(wildcard $(TOUCHFILE)))
+$(shell echo 'BUILDCMD := $(BUILDCMD)' > $(TOUCHFILE).tmp)
+$(shell cmp $(TOUCHFILE) $(TOUCHFILE).tmp > /dev/null 2>&1 || rm -f $(TOUCHFILE))
+$(shell rm -f $(TOUCHFILE).tmp)
+endif
+
+.PHONY: all build clean
 
 all: build
 
-build-docs: $(DOCS_PDF) $(DOCS_HTML)
+build: $(TOUCHFILE)
 
-vpath %.adoc $(SRC_DIR)
+# TBD: remove the sed line when copyright is no longer redirected to MIPS
+$(TOUCHFILE): $(DEPS) | $(DESTDIR)
+	sed -i.bak "s/RISC-V International/MIPS/g" docs-resources/themes/riscv-pdf.yml
+	$(BUILDCMD)
+	echo 'BUILDCMD := $(BUILDCMD)' > $@
 
-%.pdf: %.adoc
-	$(DOCKER_CMD) $(DOCKER_QUOTE) $(ASCIIDOCTOR_PDF) $(OPTIONS) $(REQUIRES) $< $(DOCKER_QUOTE)
+$(DESTDIR):
+	mkdir -p $@
 
-%.html: %.adoc
-	$(DOCKER_CMD) $(DOCKER_QUOTE) $(ASCIIDOCTOR_HTML) $(OPTIONS) $(REQUIRES) $< $(DOCKER_QUOTE)
-
-build:
-	@echo "Checking if Docker is available..."
-	@if command -v docker >/dev/null 2>&1 ; then \
-		echo "Docker is available, building inside Docker container..."; \
-		$(MAKE) build-container; \
-	else \
-		echo "Docker is not available, building without Docker..."; \
-		$(MAKE) build-no-container; \
-	fi
-
-build-container:
-	@echo "Starting build inside Docker container..."
-	$(MAKE) build-docs
-	@echo "Build completed successfully inside Docker container."
-
-build-no-container:
-	@echo "Starting build..."
-	$(MAKE) SKIP_DOCKER=true build-docs
-	@echo "Build completed successfully."
-
+ifeq (,$(wildcard $(DESTDIR)))
+clean:
+else
 clean:
 	@echo "Cleaning up generated files..."
-	$(DO_CLEAN)
+	$(CLEANCMD)
 	@echo "Cleanup completed."
+endif

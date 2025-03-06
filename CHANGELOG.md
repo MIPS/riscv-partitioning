@@ -9,5 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-03-06
+- Significant updates based on internal review
+
 ## [0.1.0] - 2025-02-25
 - Initial conversion to asciidoc

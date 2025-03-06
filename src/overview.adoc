@@ -3,4 +3,125 @@
 [[overview]]
 == Architecture Overview
 
-TBD
+=== Reconciling technologies
+
+This document architecturally reconciles 3 complementary but independent
+partitioning models:
+
+* WorldGuard, hereafter "WG"
+* TrustZone, hereafter "TZ"
+* Physical Memory Protection, hereafter "PMP";
+** "ePMP" for processor-initiated transactions
+** "IOPMP" for device-initiated transactions
+
+TrustZone is a technology developed by ARM for their processor families that
+creates an asymmetric division of a system into two isolated resource domains,
+one "Secure" and the other "Non-Secure".
+
+WorldGuard (unlike TrustZone) is a RISC-V-native solution for system
+partitioning, it allows one to create two or more isolated resource domains (up
+to some implementation-specific limit) and it provides ISA extensions that fit
+naturally into the RISC-V programming model.
+
+There are multiple reasons to want to achieve such a reconciliation, among them;
+
+* WorldGuard is by far the more natural ISA choice for RISC-V harts, and the
+  more flexible option for RISC-V-based systems as a whole.
+* TrustZone is a natural fit for Trusted Execution Environment (TEE)-style
+  solutions, and has been underpinning such solutions for many years.
+* There is industry demand to be able to create RISC-V/ARM hybrid solutions,
+  e.g. by embedding RISC-V cores into ARM/TrustZone-centric SoCs (and vice
+  versa). In terms of interoperability, one cannot teach ARM TZ-based cores to
+  "speak WorldGuard", but one _can_ teach RISC-V WG-based cores to "speak
+  TrustZone".
+* Each of the technologies presents its own valuable properties in terms of
+  programming model(s), and those properties should ideally be additive.
+
+The following subsections provide background information about each of these
+technologies and hint at how they will be adapted to work together.
+
+=== WorldGuard
+
+WG is a RISC-V-native approach to system-partitioning. It tags bus transactions
+with a "World ID" (hereafter "WID") that can be checked and interpreted at (or
+on route to) the transaction's target, giving rise to the concept of software
+and other transaction-emitting resources being separated into "worlds" that
+have distinct levels of access to addressable resources within the system.
+Initiators implement "marker" functionality to control the tagging of outgoing
+transactions with appropriate WID values, and bus gaskets and target devices
+implement "checker" functionality to perform WID-aware processing.
+
+WG does not define any specific concept for "Secure" or "Non-Secure"
+partitions. Its assumption is that the Worlds concept is used to obtain the
+desired partitioning arrangement, which may include having a world (or worlds)
+dedicated to running only secure (e.g. TCB) workloads and only giving those
+worlds access to security-critical resources. I.e. the system integrator can
+determine whether they would consider a given world as "secure" or otherwise,
+because the current, publicly-available WG specification does not impose the
+concept. __We will clarify and augment the WG definition to harmonize it with
+TZ, which among other things will provide it with the TZ-interoperable concept
+of "Secure"-vs-"Non-Secure" worlds.__
+
+The documented WG ISA uses per-hart CSR registers, including the control that
+locks M-mode limitations into place until the next reset. These would typically
+be initialized as part of a secure-boot process and so may be driven by an
+external processing element (such as a discrete HSM block). __We will clarify
+how the augmented WG definition should be exposed for external configuration.__
+
+=== TrustZone
+
+AMBA protocols define a boolean security attribute (`AxPROT[1]` in AXI) that
+can be checked and interpreted at (or on route to) the transaction's target,
+giving rise to the TZ concept of "Secure" (versus "Non-Secure") partitions.  TZ
+documentation refers to these two partitions as "worlds", but we avoid doing so
+to avoid confusion with the WorldGuard concept of the same name.
+
+ARMv8-M uses the term "NS-Req" to refer to the TZ security level of a request,
+and "NS-Attr" to refer to the TZ security attribute of an addressable resource
+that an NS-Req can be compared against. This document uses NS-Req and NS-Attr
+in the same manner, and NS to generically refer to both.
+
+Whereas the WG model assumes that transaction sources are markers but not
+checkers,footnote:[This is justified by the fact that, if source-side checking
+is required in a RISC-V and WG based system, ePMP/IOPMP can provide that
+functionality.] TZ assumes that the initiator performs source-side checking
+before allowing a transaction to be emitted and tagged with the current NS
+state. __We will define an "NS-Attr" PMA (Physical Memory Attribute) and
+associated behavior that can be implemented by the processor - likely in the
+ePMP - to perform NS-aware source-side checks in a manner similar to the TZ
+model.__
+
+=== ePMP
+
+ePMP is the per-hart mechanism used by RISC-V cores to partition the physical
+address space with privilege-based access controls. These control access to
+physical address ranges based on the active privilege level of the hart and the
+attempted access type. As with the other partitioning mechanisms, it naturally
+lends itself to having "lockable" configuration, to constrain M-mode access in
+a way that it can't subsequently reconfigure (without a reset).
+
+As described previously, there is no need to adjust ePMP for WG behavior, but
+there is a need to adjust it to support TZ-compatible behavior.
+__Specifically, ePMP will need to be cognizant of the hart's effective security
+state (the NS-Req state of outgoing transactions) in order to prevent a hart in
+the Non-Secure state from accessing a resource marked as Secure.__
+
+=== IOPMP
+
+The publicly-defined IOPMP block is independent of the WG and TZ concepts. It
+specifies a prototypical "checker" (with minimal "marker" functionality also)
+for use with device initiators. This configurable block is a form of firewall
+and is proposed primarily for the purpose of providing source-side transaction
+checking for a device, akin to the source-side checking provided by ePMP for
+core-initiated transactions. The IOPMP definition also suggests that IOPMP
+might be used target-side, but leaves as "implementation-dependent" the manner
+in which an input RRID would be provided in that case. In any case, IOPMP is
+neither WG-aware nor TZ-aware.
+
+To make use of WG (at all) and/or TZ (outside the hart), there must be
+WID-aware and/or NS-aware targets and/or routers within the interconnect,
+otherwise there is little point to tagging transactions with either concept.
+__We achieve this by making a small series of improvements to IOPMP, to
+"WorldGuardify" and "TrustZonify" it.__ The resulting "enhanced IOPMP"
+(hereafter "eIOPMP") can be instantiated as a target-side or routing firewall.
+

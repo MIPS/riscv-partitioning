@@ -1,0 +1,131 @@
+:imagesdir: ./images
+
+[[nonisa]]
+== Non-ISA system architecture
+
+[[cache]]
+=== Cache semantics
+
+WG and TZ allow the SoC integrator to place “checker” logic arbitrarily close
+to the target device (in the interconnect topology) because each transaction
+carries its WID and NS fields with it. This means that any cache on the path
+that might allocate data into cache lines will need to tag those cache lines
+with the WID of the originating transaction. __Note, it is not necessary to tag
+cache lines with the NS attribute as well, because that is derived from the
+WID. I.e. two transactions cannot have different NS attributes and yet have the
+same WID.__
+
+If a subsequent request matches on a cached physical address but either of the
+following discrepancies is observed, then the cache line should be evicted, and
+the new request should be treated as a cache miss.
+
+* Difference between the WID of the requester and the WID the cache line was
+  tagged with, or
+* Difference between the requested access mode and the current mode of the
+  cache line.
+
+==== Why?
+
+If an authority downstream from the cache has determined that a combination of
+WID, address, and access mode was acceptable, one can't assume that the outcome
+would be the same with a different WID or access mode. So no such transaction
+(matching address but mismatching WID or access mode) may be honored locally by
+the cache, which must instead ensure that the transaction passes through so
+that its fate is determined by the appropriate (downstream) authority. This is
+achieved by evicting the existing cache line and treating the access as a
+cache-miss.
+
+==== What about shared memory?
+
+The obvious worst-case (i.e. where the cache-eviction behavior will be
+particularly punitive) is when a shared memory region is being used to exchange
+data between two or more worlds. The "solution" is to ensure that such
+performance-critical cases use TCM (tightly-coupled memory). I.e. the real
+enemy in this case is not the cache eviction behavior (which is unavoidable in
+any case) but rather the latency to the backing store. Latency to a TCM is
+typically only a little worse than the latency of a cache-hit, whereas latency
+to main memory is typically a large multiple of the cache-hit latency. In other
+cases, a DMA engine with input and output mapped to different WIDs (providing
+single-copy) may be a better approach for inter-world communication.
+
+=== Physical Memory Attributes (PMAs)
+
+One of the properties of TZ is that it includes source-side checking, whereby
+the processor has awareness of the NS state across its physical address space
+and so it can compare that against its current NS state to determine whether or
+not to emit the requested load/store/fetch transaction. (The former is called
+NS-Attr, and the latter is called NS-Req.)
+
+The natural adaptation on RISC-V to provide equivalent/compatible behavior is
+to add a new PMA type to represent NS-Attr. The way in which PMAs are
+coordinated in RISC-V is left to each implementation, but the assumption is
+that the hart can obtain the PMAs for any given physical address range that is
+considering accessing.
+
+=== Bus protocols
+
+We have very carefully avoided being too specific in this proposal about how
+exactly bus transactions should transport their WID and NS fields, as this
+should be something that can be controlled at integration time and adapted to
+different bus protocols as required. In this section, we will describe some
+canonical assumptions about how these fields can be encoded (and decoded) in
+AXI5, but implementations may wish to use alternative representations, and
+integrators may subsequently wish to interpose gaskets to repack or renormalize
+these fields in different ways.
+
+==== WID
+
+For WID, there is an AXI5 field called `AxNSAID` (where the "x" is "R" or "W"
+for the read and write channels respectively) that corresponds very closely to
+the functional description of a WID, in particular with respect to the
+assumptions about cache tagging and evictions (see <<cache>> above). However,
+there are some subtleties to consider;
+
+* The "NS" in `AxNSAID` is due to the fact that this field is documented as
+  carrying an address-space identifier _for use in the Non-Secure domain_. In
+  other words and in WG terms, there is an assumption that there is only one
+  Secure world, and that all other worlds ought to be Non-Secure.
+* Further, the AXI5 documentation indicates that `AxNSAID` should be zero on
+  all Secure transactions (and non-zero for Non-Secure transactions). In other
+  words and in WG terms, there is an assumption that the only Secure world is
+  `WID=0`.
+
+In the absence of IP that adheres to these constraints, nothing in this
+proposal requires such limitations. But if one intends to interact with IP that
+_does_ adhere to such constraints, it may be necessary to either;
+
+* Follow the constraint in one's own architecture - i.e. to only have a single
+  Secure world and to assign it `WID=0`.
+* Interpose a bus gasket between topologies that do and don't adhere to these
+  constraints in order to normalize/denormalize as required.
+* To encode/decode WIDs in a different field (e.g. in `AxUSER`).
+
+==== NS
+
+For multiple versions of AXI, the TrustZone "NS" bit has been encoded as the
+second bit of the `AxPROT` field, i.e. `AxPROT[1]`. It makes sense for RISC-V
+solutions to follow that convention also, and this is especially true if
+interacting with existing TrustZone-compatible IP.
+
+=== Integration
+
+As mentioned earlier in this chapter, certain integrations may wish to
+interpose a bus gasket to provide any additional normalization of WID/NS, as
+required.
+
+==== Integrating RISC-V into a TrustZone-centric SoC
+
+The SoC may only be signaling the `AxPROT[1]` bit, in which case it might be
+necessary to normalize the `AxNSAID` attribute on its behalf before
+transactions enter the RISC-V-centric subsystem (e.g. by ensuring that secure
+transactions are tagged with `AxNSAID=0` and non-secure transactions are tagged
+with `AxNSAID=1` - thereby mapping TZ to WID).
+
+==== Integrating TrustZone IP into a WorldGuard-centric SoC
+
+The SoC may only be signaling the `AxNSAID` attribute, in which case it would
+make sense to normalize the `AxPROT[1]` bit on its behalf before transactions
+enter the TZ-centric subsystem (and possibly convert `AxNSAID/WID` values too,
+from whatever the source range might be, if the TZ-centric subsystem is also
+paying attention to "Non-Secure Address space IDs").
+

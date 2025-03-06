@@ -1,10 +1,10 @@
-= Root of Trust on RISC-V platforms
+= Secure system partitioning on RISC-V platforms
 :docgroup: RISC-V Task Group
-:description: :description: Partitioning on RISC-V platforms
+:description: :description: Secure system partitioning on RISC-V platforms
 :company: RISC-V.org
 :revdate: 2/2025
-:revnumber: 0.1
-:revremark: This document is under development. Expect potential changes. Visit http://riscv.org/spec-state for further details.
+:revnumber: 0.5
+:revremark: This document is under development. Expect changes.
 :revinfo:
 :url-riscv: http://riscv.org
 :doctype: book
@@ -12,13 +12,13 @@
 :colophon:
 :appendix-caption: Appendix
 // https://docs.asciidoctor.org/asciidoc/latest/macros/images-directory/
-:imagesdir: ../docs-resources/images
+:imagesdir: /inputs/docs-resources/images
 :title-logo-image: image:risc-v_logo.png["RISC-V International Logo",pdfwidth=3.25in,align=center]
 // Settings:
 :experimental:
 :reproducible:
 //:WaveDromEditorApp: app/wavedrom-editor.app
-:imagesoutdir: ../build/images
+:imagesoutdir: /outputs/images
 :srcdir: src
 :bibtex-file: {srcdir}/example.bib
 :bibtex-order: alphabetical
@@ -39,8 +39,8 @@ endif::[]
 :footnote:
 :xrefstyle: short
 
-= Partitioning on RISC-V platforms
-non-existant Task Group
+= Secure system partitioning on RISC-V platforms
+Non-existant Task Group
 
 // Preamble
 [WARNING]
@@ -51,20 +51,14 @@ being accepted as standard, so implementations made to this draft
 specification will likely not conform to the future standard.
 ====
 
-[preface]
-== Copyright and license information
-This specification is licensed under the Creative Commons
-Attribution 4.0 International License (CC-BY 4.0). The full
-license text is available at
-https://creativecommons.org/licenses/by/4.0/.
-
-Copyright 2024 by RISC-V International.
-
-[preface]
+include::copyright.adoc[]
 include::contributors.adoc[]
-
 include::intro.adoc[]
-include::notation.adoc[]
-include::glossary.adoc[]
+//include::notation.adoc[]
+//include::glossary.adoc[]
 include::overview.adoc[]
-include::bibliography.adoc[]
+include::extconfig.adoc[]
+include::isa.adoc[]
+include::nonisa.adoc[]
+include::eiopmp.adoc[]
+//include::bibliography.adoc[]

@@ -1,7 +1,6 @@
+[preface]
 == Contributors
-[.text-justify]
 The proposed specifications (non-ratified, under discussion) have been
 contributed to directly or indirectly by (in alphabetical order):
 
-[.text-justify]
-Geoffrey Thorpe (Editor)
+Geoffrey Thorpe (Editor), Joe Zbiciak, Terry Parks
