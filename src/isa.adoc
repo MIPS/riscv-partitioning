@@ -177,8 +177,8 @@ zero.
   `mwidseclist`), the result will determine the range of WIDs itself, and this
   should be a power of 2.
 
-The implementation must ensure that the two methods for determing the valid WID range are
-consistent with one another, i.e. width(WIDBITMASK) == 2^width(WID)^
+The implementation must ensure that the two methods for determing the valid WID
+range are consistent with one another, i.e. width(WIDBITMASK) == 2^width(WID)^
 
 === Decision logic
 
@@ -212,22 +212,22 @@ are resampled at all points where the privilege level [.underline]#could#
 change, whether or not the privilege level [.underline]#actually# changes.)__
 
 The justification for this sampling behavior, rather than register writes
-having immediate effect, is the case where M-mode is preparing to function with
-a Non-Secure `mwid`. Consider, if M-mode could change `mwid` from a Secure WID
-to a Non-Secure WID and have it take effect immediately, the instruction
-fetching would fail on the very next instruction (Secure WIDs cannot fetch from
-Non-Secure regions, and Non-Secure WIDs cannot fetch from Secure
-regions.footnote:[In fact, Secure WIDs _should_ not be able to fetch from
-Non-Secure regions, as is the case with TrustZone implementations, but we leave
-the enforcement of that constraint to the ePMP configuration.]) But due to
-these sampling semantics, M-mode can set `mwid` to a Non-Secure WID and then
-MRET to an instruction address that is Non-Secure - this triggers the sampling
-of the Non-Secure WID for it to take effect, which by that point will not fail
-to fetch instructions because the instructions after the MRET are being pulled
-from a Non-Secure region. For this to work, M-mode must ensure that no
-interrupts occur between the modification of `mwid` and the MRET, probably by
-disabling interrupts before the modification and reenabling them after the
-MRET.
+having immediate effect, is the case where M-mode is preparing for the entire
+hart to function under a Non-Secure `mwid`. Consider, if M-mode could change
+`mwid` from a Secure WID to a Non-Secure WID and have it take effect
+immediately, the instruction fetching would fail on the very next instruction
+(Secure WIDs cannot fetch from Non-Secure regions, and Non-Secure WIDs cannot
+fetch from Secure regions.footnote:[In fact, Secure WIDs _should_ not be able
+to fetch from Non-Secure regions, as is the case with TrustZone
+implementations, but we leave the enforcement of that constraint to the ePMP
+configuration.]) But due to these sampling semantics, M-mode can set `mwid` to
+a Non-Secure WID and then MRET to an instruction address that is Non-Secure -
+this triggers the sampling of the Non-Secure WID for it to take effect, which
+by that point will not fail to fetch instructions because the instructions
+after the MRET are being pulled from a Non-Secure region. For this to work,
+M-mode must ensure that no interrupts occur between the modification of `mwid`
+and the MRET, probably by disabling interrupts before the modification and
+reenabling them after the MRET.
 
 * The "effective WID" is the WID of the current privilege level (as last
   sampled from the corresponding CSR).
@@ -335,8 +335,8 @@ are read-only zero.
 |===
 | Name | Bits | Description
 | MASK | 31:0
-| Bit-vector indicating which WIDs may be used by this hart. LSB corresponds to
-WID 0, `NWorlds` LSBs are used, others are read-only zero.
+| Bit-vector limiting the WIDs that may be used by this hart. LSB corresponds
+to WID 0, `NWorlds` LSBs are used, others are read-only zero.
 |===
 
 This register is locked if and only if the `mwid` register is. The `mwidlist`
@@ -396,7 +396,7 @@ with respect to when a write to `mlwid` takes effect.
 |===
 | Name | Bits | Description
 | MASK | 31:0
-| Bit-vector indicating which WIDs may be written to `slwid` by S-mode.
+| Bit-vector limiting the WIDs that may be used with `slwid`.
 |===
 
 This register does not lock so it remains writable to M-mode at all times.
