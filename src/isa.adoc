@@ -77,6 +77,7 @@ the privilege levels introduced by the Hypervisor extension.
 [title="WorldGuard non-Hypervisor decision tree"]
 image::WG-V0.drawio.svg[]
 
+[[hypervisor]]
 === Hypervisor support
 
 The addition of the Hypervisor extension adds a boolean `V` mode that affects
@@ -95,6 +96,7 @@ H extension introduces. The following diagram extends the previous one to
 illustrate the WorldGuard decision tree when the Hypervisor extension is
 enabled;
 
+[[hypervisorWGtree]]
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="WorldGuard Hypervisor-extended decision tree"]
 image::WG-V1.drawio.svg[]
@@ -298,6 +300,9 @@ reenabling them after the MRET.
   match, reject transaction.
 
 ==== WorldGuard accept/reject
+
+Please see <<hypervisorWGtree>> in <<hypervisor>> for a visual representation
+of this decision logic.
 
 * If the hart is in VU-mode (i.e. when U-mode and `V=1`), and if the effective
   WID is not set in `hwiddeleg`, reject transaction.
