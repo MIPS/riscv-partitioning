@@ -1,5 +1,5 @@
-[preface]
-== Contributors
+//[preface]
+=== Contributors
 The proposed specifications (non-ratified, under discussion) have been
 contributed to directly or indirectly by (in alphabetical order):
 

@@ -51,8 +51,11 @@ being accepted as standard, so implementations made to this draft
 specification will likely not conform to the future standard.
 ====
 
+[preface]
+== Preface
 include::copyright.adoc[]
 include::contributors.adoc[]
+
 include::intro.adoc[]
 //include::notation.adoc[]
 //include::glossary.adoc[]
