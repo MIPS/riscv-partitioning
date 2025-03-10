@@ -22,8 +22,8 @@ In all such cases we assume:
 * If there is value to making a setting available for external control, it
   follows that the control in question should be "lockable", such that settings
   become immutable before the affected harts execute (and/or the affected
-  devices are enabled). The converse is true also (if a configuration is
-  lockable, it makes sense for it to be configurable by external control.)
+  devices are enabled). The converse is true also: if a configuration is
+  lockable, it makes sense for it to be configurable by external control.
 * External configuration may be optional, in that the subsystem harts may
   perform their own self-configuration.
 ** Alternatively, for implementations intended to always be externally
@@ -43,7 +43,9 @@ be exposed for external control.__
 
 ePMP also contributes to the system partitioning, through the ability to write
 (and lock) rules that govern even M-mode's access to the system's addressable
-resources. __The ePMP registers should be exposed for external control.__
+resources. On some platforms, the `pmpcfgX` registers may also be the way in
+which physical address ranges are assigned their NS-Attr TZ attributes. __The
+ePMP registers should be exposed for external control.__
 
 === eIOPMP
 
@@ -55,6 +57,14 @@ that can incorporate look-aside components of this sort. Or it may be
 integrated into an IOMMU, DMA engine, memory controller, ...]. It is an
 integration-level decision where an eIOPMP instance's registers appear and how
 they are exposed.
+
+As with the ePMP, the eIOPMP may also be responsible for recording the NS-Attr
+TZ attribute for the physical address ranges it covers, this depends on how the
+platform chooses to implement these attributes. (They may alternatively be
+tracked by the platform's PMAs, i.e. Physical Memory Attributes, in which case
+the eIOPMP may instead obtain the information that way.) __The eIOPMP may be
+responsible for recording the NS-Attr state of the physical address ranges it
+covers.__
 
 Though some of the IOPMP register settings advertise their own locking
 mechanisms, they only provide for a partial lockdown of the

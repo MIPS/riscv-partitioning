@@ -90,10 +90,13 @@ checkers,footnote:[This is justified by the fact that, if source-side checking
 is required in a RISC-V and WG based system, ePMP/IOPMP can provide that
 functionality.] TZ assumes that the initiator performs source-side checking
 before allowing a transaction to be emitted and tagged with the current NS
-state. __We will define an "NS-Attr" PMA (Physical Memory Attribute) and
-associated behavior that can be implemented by the processor - likely in the
-ePMP - to perform NS-aware source-side checks in a manner similar to the TZ
-model.__
+state. As such, in order to support TZ-style source-checking, a means is
+required for determining the NS-Attr(s) of a given physical address range. This
+might be achieved by the addition of an "NS-Attr" PMA (Physical Memory
+Attribute) or through some other implementation-specific mechanism. __We will
+propose an optional "NS-Attr" field in the PMP configuration CSRs that can be
+used on platforms that prefer to have the NS-Attr attribute be recorded for
+each physical address range in the ePMP configuration.__
 
 === ePMP
 
@@ -108,7 +111,10 @@ As described previously, there is no need to adjust ePMP for WG behavior, but
 there is a need to adjust it to support TZ-compatible behavior.
 __Specifically, ePMP will need to be cognizant of the hart's effective security
 state (the NS-Req state of outgoing transactions) in order to prevent a hart in
-the Non-Secure state from accessing a resource marked as Secure.__
+the Non-Secure state from accessing a resource marked as Secure. It may also be
+responsible for recording (through `pmpcfgX` register settings) the NS-Attr
+state of physical address ranges, depending on how the platform manages such
+attributes.__
 
 === IOPMP
 
@@ -128,4 +134,10 @@ otherwise there is little point to tagging transactions with either concept.
 __We achieve this by making a small series of improvements to IOPMP, to
 "WorldGuardify" and "TrustZonify" it.__ The resulting "enhanced IOPMP"
 (hereafter "eIOPMP") can be instantiated as a target-side or routing firewall.
+
+Note also that, as with ePMP, there is the implementation-specific decision of
+how the NS-Attr attributes are maintained for the physical address space, so
+that the eIOPMP can compare the NS-Req state of the request(er) against the
+target range. __We provide an optional mechanism for recording the NS-Attr
+attributes of physical address ranges within the eIOPMP configuration.__
 

@@ -137,6 +137,24 @@ eIOPMP assumes its output to consist of;
 ** the RRID/WID parameter
 ** the NS-Req state of the request
 
+[[nsattr]]
+==== NS-Attr
+
+As was discussed in the ISA chapter, in <<trustzone>>, implementations must
+provide a means for determining the NS-Attr of physical address ranges. For the
+ISA, one optional solution is to record the NS-Attr field in the `pmpcfgX`
+registers of the ePMP, and there is a means to detect at run-time whether that
+mechanism is being used by the implementation. Similarly for eIOPMP, an
+implementation may choose to record the NS-Attr field in the eIOPMP array
+entries, on a per-address-range basis.
+
+****
+eIOPMP SHOULD provide a per-entry configuration that implementations can use to
+record the NS-Attr for the corresponding physical address range. It should be
+run-time-detectable as to whether the implementation is using this mechanism or
+not.
+****
+
 ==== Match-based output WIDs
 
 IOPMP implements a global output WID override with the `HWCFG2.rrid_transl`
@@ -261,6 +279,7 @@ It should be noted that a new register field, `HWCFG3.prog`, implements a sticky
 (till reset) lockdown of the entire eIOPMP configuration, i.e. rendering all
 eIOPMP registers read-only (except for the "Error capture registers").
 
+[[eiopmphwcfg3]]
 ==== `HWCFG3: 0x0018` (new)
 
 [%header,cols="3,2,2,2,8"]
@@ -273,7 +292,9 @@ eIOPMP registers read-only (except for the "Error capture registers").
 `HWCFG0.rrid_trans_prog` apply here, but to the whole eIOPMP configuration (not
 just to a specific register or field), with the exception of the "Error Capture
 Registers".
-| rsv | `31:2` | ZERO | 0 | Reserved, wired to zero.
+| ns_en | `2:2` | R | IMP
+| Indicates whether NS-Attr is recorded in `ENTRY_CFG(i).ns_attr`.
+| rsv | `31:3` | ZERO | 0 | Reserved, wired to zero.
 |===
 
 * If `chk_addr` is zero, checking always matches on the first IOPMP entry
@@ -283,6 +304,9 @@ Registers".
   `HWCFG0.rrid_transl_prog` in the IOPMP specification: the field defaults to 1
   out of reset (the configuration is unlocked), supports a write-1-to-clear
   semantic, and is sticky to 0 (the configuration is locked).
+* If `ns_en` is zero, then the implementation does not use the per-entry
+  `ENTRY_CFG(i).ns_attr` field to determine the NS-Attr attribute of the
+  corresponding physical address range.
 
 ==== `WIDSECLIST: 0x001c` (new)
 
@@ -300,6 +324,7 @@ zero.
 * `mask` represents the same information as the `MASK` field in the
   `mwidseclist` CSR (see <<mwidseclist>>).
 
+[[eiopmpentrycfg]]
 ==== `ENTRY_CFG(i): ENTRYOFFSET + (i*0x10) + 0x8` (modified)
 
 [%header,cols="3,2,2,2,8"]
@@ -311,9 +336,9 @@ zero.
 | *wid_en* | `11:11` | WARL | 0
 | *New field:* causes matching transactions to have `wid` override the RRID/WID
 field of the request.
-| *ns* | `13:12` | WARL | 0
-| *New field:* determines the TZ "NS-Attr" attribute for the address range.
-See <<trustzoneAcceptReject>> for the behavior of these values.
+| *ns_attr* | `13:12` | WARL | 0
+| *New field:* determines the TZ "NS-Attr" attribute for the address range,
+only if `HWCFG3.ns_en` is non-zero.
 | *rsv* | `15:14` | ZERO | 0
 | *Modified:* shrunk, used to be bits `31:11`.
 | *wid* | `31:16` | WARL | DC
@@ -322,11 +347,11 @@ See <<trustzoneAcceptReject>> for the behavior of these values.
 
 * `wid_en` determines whether a WID-override, using `wid` as the value, will
   apply to transactions that match on this IOPMP entry.
-* The `ns` field determines how NS-Req (as provided by input or as determined
-  via the `widseclist` register mask) is treated, whether the transaction
-  should be accepted or rejected, and if accepted, what NS-Req field the
-  resulting transaction should carry. I.e. `ns` provides the NS-Attr attribute.
-  This follows the same decision logic as described in <<trustzoneAcceptReject>>.
+* The `ns_attr` field determines the `NS-Attr` for the physical address long so
+  long as `HWCFG3.ns_en` is non-zero (otherwise there is some other,
+  implementation-specific mechanism for determining this attribute). The
+  `NS-Req` of the input is compared against `NS-Attr` following the same
+  decision logic described in <<trustzoneAcceptReject>>.
 
 === Hardware configuration
 

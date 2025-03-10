@@ -48,7 +48,7 @@ to main memory is typically a large multiple of the cache-hit latency. In other
 cases, a DMA engine with input and output mapped to different WIDs (providing
 single-copy) may be a better approach for inter-world communication.
 
-=== Physical Memory Attributes (PMAs)
+=== NS-Attr and Physical Memory Attributes (PMAs)
 
 One of the properties of TZ is that it includes source-side checking, whereby
 the processor has awareness of the NS state across its physical address space
@@ -56,11 +56,26 @@ and so it can compare that against its current NS state to determine whether or
 not to emit the requested load/store/fetch transaction. (The former is called
 NS-Attr, and the latter is called NS-Req.)
 
-The natural adaptation on RISC-V to provide equivalent/compatible behavior is
+One natural adaptation on RISC-V to provide equivalent/compatible behavior is
 to add a new PMA type to represent NS-Attr. The way in which PMAs are
 coordinated in RISC-V is left to each implementation, but the assumption is
 that the hart can obtain the PMAs for any given physical address range that is
-considering accessing.
+considering accessing. Whether (and how) distinct blocks (like eIOPMP
+instances) can obtain NS-Attr attributes in an equivalent manner is also
+implementation-dependent.
+
+This proposal suggests mechanisms by which the ePMP and/or eIOPMP blocks can,
+alternatively, record the NS-Attr attribute for the address ranges that they
+manage.
+
+* For ePMP, the two unused/reserved bits in `pmpcfgX` registers carry the
+  NS-Attr value, and return `10b` if the platform isn't supporting this
+  mechanism. See <<trustzoneAcceptReject>> and <<epmpRegisterMap>> for more
+  detail.
+* For eIOPMP, the `HWCFG3.ns_en` register field determines if the platform is
+  using the per-entry `ENTRY_CFG(i).ns_attr` field to carry the NS-Attr value.
+  See <<nsattr>> for more detail, and <<eiopmphwcfg3>> and <<eiopmpentrycfg>>
+  for register information.
 
 === Bus protocols
 

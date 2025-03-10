@@ -37,6 +37,7 @@ that;
 ** Alternative illegal-value semantics for the WG CSRs.
 * Some of the WG CSRs be exposed for external control.
 
+[[trustzone]]
 ==== TrustZone
 
 As stated above, support for TZ interoperability is derived from WG:
@@ -53,6 +54,13 @@ As stated above, support for TZ interoperability is derived from WG:
     SecureLevel(M-mode) >= SecureLevel(S-mode)
     SecureLevel(S-mode) == SecureLevel(U-mode)
 ....
+* Implementations must also provide a means for determining the NS-Attr of
+  physical address ranges, in order to provide TZ-style transaction-checking.
+** The implementation may choose to add NS-Attr as a new PMA (Physical Memory
+   Attribute).
+** Alternatively, implementations can choose to record NS-Attr attributes in
+   the ePMP and/or eIOPMP configurations themselves, as described in this
+   proposal.
 
 === Secure worlds
 
@@ -317,17 +325,19 @@ of this decision logic.
 ==== TrustZone accept/reject
 
 This decision involves comparing the "effective security state" against the
-security attribute of the physical address range being accessed, which is a PMA
-(Physical Memory Attribute). This decision also determines, if the transaction
-is accepted, whether the outgoing transaction should be signaled as Secure or
-Non-Secure. In the following description we are assuming this logic is
-implemented as part of the ePMP, though implementations are free to provide
-these behaviors through other means.
+security attribute of the physical address range being accessed (which may be a
+PMA - a Physical Memory Attribute - or it may be recorded in the ePMP
+configuration). This decision also determines, if the transaction is accepted,
+whether the outgoing transaction should be signaled as Secure or Non-Secure. In
+the following description we are assuming this logic is implemented as part of
+the ePMP, though implementations are free to provide these behaviors through
+other means.
 
 * ePMP will add the effective security state to its inputs (alongside current
   inputs: the current privilege level, the address range, and the access type).
-* ePMP will add the TrustZone PMA (NS-Attr) to the list of memory attributes it
-  looks up for the physical address range.
+* ePMP will add the TrustZone `NS-Attr` to the list of memory attributes it
+  considers, whether that is sourced from the platform's PMA infrastructure or
+  recorded in the ePMP's own configuration.
 * The NS-Attr memory attribute supports three options for the comparison with
   the effective security state and for determining the NS-Req state for the
   resulting transaction (if accepted).
@@ -342,7 +352,7 @@ these behaviors through other means.
 | `11b` | *Non-Secure Memory* | Read, Write, Execute | Read, Write | Non-Secure
 |===
 
-=== Register map
+=== WorldGuard Register map
 
 ==== Summary
 
@@ -514,4 +524,26 @@ read-only zero.
 
 Writes to `slwid` have the same ordering semantics as writes to the ePMP CSRs
 with respect to when a write to `slwid` takes effect.
+
+[[epmpRegisterMap]]
+=== ePMP Register Map
+
+The only register-map modification to ePMP contemplated by this proposal
+concerns the possibility for implementations to record the NS-Attr attribute
+within the ePMP configuration.
+
+The `pmpcfgX` configuration registers are described in the "RISC-V Instruction
+Set Manual Volume II: Privileged Architecture". These are densely packed into
+CSRs and consist of 8 bits each, of which two bits are documented as `0`
+(unused/reserved). It so happens that the NS-Attr attribute is also a 2-bit
+value, of which one value (`10b`) is documented as being unused/reserved. As
+such...
+
+This proposal suggests;
+
+* using the two unused bits in the `pmpcfg0`-`pmpcfg63` registers
+  to record NS-Attr,
+* platforms that use an alternative mechanism for determining the NS-Attr of a
+  physical address range should always return `10b`, such that software can
+  detect this behavior.
 
