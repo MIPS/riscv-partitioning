@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-03-10
+- Hypervisor support
+- Convert from 32-bit to XLEN-bit
+- Clarify TZ/NS-Attr support via PMA and/or ePMP/eIOPMP config
+- Change of title
+
 ## [0.5.0] - 2025-03-06
 - Significant updates based on internal review
 

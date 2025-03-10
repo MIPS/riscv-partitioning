@@ -3,7 +3,7 @@
 :description: :description: Secure system partitioning with WorldGuard & TrustZone
 :company: RISC-V.org
 :revdate: 2/2025
-:revnumber: 0.5
+:revnumber: 0.6
 :revremark: This document is under development. Expect changes.
 :revinfo:
 :url-riscv: http://riscv.org
