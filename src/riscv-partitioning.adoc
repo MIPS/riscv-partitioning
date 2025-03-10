@@ -1,6 +1,6 @@
-= Secure system partitioning on RISC-V platforms
+= Secure system partitioning with WorldGuard & TrustZone
 :docgroup: RISC-V Task Group
-:description: :description: Secure system partitioning on RISC-V platforms
+:description: :description: Secure system partitioning with WorldGuard & TrustZone
 :company: RISC-V.org
 :revdate: 2/2025
 :revnumber: 0.5
@@ -39,7 +39,7 @@ endif::[]
 :footnote:
 :xrefstyle: short
 
-= Secure system partitioning on RISC-V platforms
+= Secure system partitioning with WorldGuard & TrustZone
 Non-existant Task Group
 
 // Preamble
