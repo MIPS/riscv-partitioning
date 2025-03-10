@@ -119,6 +119,12 @@ eIOPMP assumes its input to consist of;
   register is used to derive the NS state from the RRID/WID parameter (similar
   to the `mwidseclist` CSR, see <<mwidseclist>>).
 
+****
+eIOPMP SHOULD be configurable to allow the NS-Req field to be determined as
+either (a) an input field (alongside the RRID/WID input parameter), or (b) via
+the `widseclist` device register (derived from the RRID/WID input parameter).
+****
+
 As a look-aside model, it does not process any request data (in the case of
 writes) nor response data (in the case of reads/fetches).
 
@@ -230,8 +236,10 @@ when multiple, non-prioritized entries are matched.
 ==== Summary
 
 Chapter 5 of v0.7 of the IOPMP specification contains a summary table of device
-registers. The following is an excerpt, in order to show eIOPMP additions and
-modifications (which are *emphasized*).
+registers. The definition given is 32-bit centric, so this document follows
+suit (we don't divide the register map into XLEN-sized chunks). The following
+is a modified excerpt of that IOPMP specification, in order to show eIOPMP
+additions and modifications (which are *emphasized*).
 
 [%header,cols="1,1,1"]
 |===

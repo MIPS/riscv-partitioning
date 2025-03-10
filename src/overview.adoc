@@ -69,9 +69,8 @@ external processing element (such as a discrete HSM block). __We will clarify
 how the augmented WG definition should be exposed for external configuration.__
 
 The publicly-available WorldGuard specification does not include adaptations
-for the Hypervisor extension and the new privilege level distinctions that it
-introduces. __We will augment the WG definition to support the Hypervisor
-extension.__
+for the Hypervisor extension. __We will augment the WG definition to support
+the Hypervisor extension.__
 
 === TrustZone
 

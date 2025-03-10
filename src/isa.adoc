@@ -80,12 +80,12 @@ image::WG-V0.drawio.svg[]
 === Hypervisor support
 
 The addition of the Hypervisor extension adds a boolean `V` mode that affects
-the behavior of `S` and `U` modes.  (`V` represents "Virtual".) When `V=0`, `S`
-and `U` mode are referred to as `HS` and `HU` respectively (here `H` represents
-"Host" or "Hypervisor", either will do). When `V=1`, they are referred to as
-`VS` and `VU` respectively. When the Hypervisor extension is enabled, the
-behavior defined in <<nonHypervisorTree>> for `S` and `U` is also
-the expected behavior for the `V=0` case, i.e. for `HS` and `HU` respectively.
+the behavior of `S` and `U` modes. When `V=0`, `S` and `U` mode are referred to
+as `HS` and `HU` respectively (here `H` represents "Host" or "Hypervisor",
+either will do). When `V=1`, they are referred to as `VS` and `VU`
+respectively. (`V` represents "Virtual".) When the Hypervisor extension is
+enabled, the behavior defined in <<nonHypervisorTree>> for `S` and `U` is also
+the expected behavior for the `V=0` case, i.e. for `HS` and `HU`.
 
 What remains is to define the expected behavior for the `VS` and `VU` states,
 which we do via the addition of two `HS`-level registers (that are not visible
@@ -208,10 +208,12 @@ range of WIDs they claim to support, and it is a software configuration task to
 not use any WIDs that might be expressible by the ISA but not supported by the
 targets of outgoing transactions!__
 
-The ISA inherently limits the number of supported WIDs to 32, as there are
-32-bit registers that serve as WID bitmasks (`mwidlist`, `mwiddeleg`,
-`mwidseclist`, `hwiddeleg`). However, the actual ISA-supported range of WIDs
-may be a smaller power of 2. (It may even be just 2.)
+The ISA inherently limits the number of supported WIDs ("NWorlds" in WG terms)
+to `XLEN`,footnote:[whether `XLEN` is 32, 64, or 128 depends on the RISC-V
+hardware configuration] as there are XLEN-bit registers that serve as WID
+bitmasks (`mwidlist`, `mwiddeleg`, `mwidseclist`, `hwiddeleg`). However, the
+actual ISA-supported range of WIDs may be a smaller power of 2. (It may even be
+just 2.)
 
 Software/firmware can discover the supported widths by writing a register with
 all ones and reading the value back - the unsupported bits will read back as
@@ -363,9 +365,9 @@ The following sections provide more detail on each of these registers.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| L | 31
+| L | `XLEN-1`
 | Lock bit. Write 1 to lock register (as read-only) until next reset
-| WID | 30:0
+| WID | `[XLEN-2]:0`
 | WID that M-mode operates in. Writable only up until L has been written 1.
 Only Ceil(Log~2~(NWorlds)) LSBs are writable, others are read-only zero.
 |===
@@ -387,7 +389,7 @@ are read-only zero.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| MASK | 31:0
+| MASK | `[XLEN-1]:0`
 | Bit-vector limiting the WIDs that may be used by this hart. LSB corresponds
 to WID 0, `NWorlds` LSBs are used, others are read-only zero.
 |===
@@ -407,7 +409,7 @@ read-only zero.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| MASK | 31:0
+| MASK | `[XLEN-1]:0`
 | Bit-vector indicating which WIDs should be considered "Non-Secure", in the TZ
 sense. LSB corresponds to WID 0, `NWorlds` LSBs are used, others are read-only
 zero.
@@ -430,7 +432,7 @@ in `mwidseclist` is 0, or "Non-Secure" if its corresponding bit is 1.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| WID | 31:0
+| WID | `[XLEN-1]:0`
 | WID that (H)S-mode operates in. Only Ceil(Log~2~(NWorlds)) LSBs are used,
 others are read-only zero.
 |===
@@ -448,7 +450,7 @@ with respect to when a write to `mlwid` takes effect.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| MASK | 31:0
+| MASK | `[XLEN-1]:0`
 | Bit-vector limiting the WIDs that may be used with `hlwid` and `slwid`.
 |===
 
@@ -462,7 +464,7 @@ read-only zero.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| WID | 31:0
+| WID | `[XLEN-1]:0`
 | WID that VS-mode operates in. Only Ceil(Log~2~(NWorlds)) LSBs are used,
 others are read-only zero.
 |===
@@ -480,7 +482,7 @@ with respect to when a write to `hlwid` takes effect.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| MASK | 31:0
+| MASK | `[XLEN-1]:0`
 | Bit-vector limiting the WIDs that may be used with `slwid` when `V=1` (i.e.
 in VU-mode).
 |===
@@ -495,7 +497,7 @@ read-only zero.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| WID | 31:0
+| WID | `[XLEN-1]:0`
 | WID that U-mode operates in. Only Ceil(Log~2~(NWorlds)) LSBs are used, others
 are read-only zero.
 |===
