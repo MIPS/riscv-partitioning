@@ -1,4 +1,4 @@
-= MIPS' Secure System Partitioning specification
+= MIPS' Secure system partitioning with WorldGuard & TrustZone
 
 = License
 
