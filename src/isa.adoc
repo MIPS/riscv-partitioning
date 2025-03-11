@@ -123,7 +123,7 @@ For registers holding WID values, the most recent publicly-available WG
 proposal stipulates: "if an illegal WID is written, the lowest-numbered legal
 WID is returned". It does not specify how WID-holding registers should behave
 if, rather than them being written with illegal values, __their existing values
-become implicitly illegal__ due to changes to other registers...
+become implicitly illegal__ due to changes to other registers.
 
 In this proposal, we opt for different semantics to handle such cases and
 therefore deviate from the WG proposal. Instead of having "illegal values" that
