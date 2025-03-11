@@ -140,13 +140,13 @@ eIOPMP assumes its output to consist of;
 [[nsattr]]
 ==== NS-Attr
 
-As was discussed in the ISA chapter, in <<trustzone>>, implementations must
-provide a means for determining the NS-Attr of physical address ranges. For the
-ISA, one optional solution is to record the NS-Attr field in the `pmpcfgX`
-registers of the ePMP, and there is a means to detect at run-time whether that
-mechanism is being used by the implementation. Similarly for eIOPMP, an
-implementation may choose to record the NS-Attr field in the eIOPMP array
-entries, on a per-address-range basis.
+As was discussed in the ISA chapter, in <<tz>>, implementations must provide a
+means for determining the NS-Attr of physical address ranges. For the ISA, one
+optional solution is to record the NS-Attr field in the `pmpcfgX` registers of
+the ePMP, and there is a means to detect at run-time whether that mechanism is
+being used by the implementation. Similarly for eIOPMP, an implementation may
+choose to record the NS-Attr field in the eIOPMP array entries, on a
+per-address-range basis.
 
 ****
 eIOPMP SHOULD provide a per-entry configuration that implementations can use to
@@ -351,13 +351,15 @@ only if `HWCFG3.ns_en` is non-zero.
   long as `HWCFG3.ns_en` is non-zero (otherwise there is some other,
   implementation-specific mechanism for determining this attribute). The
   `NS-Req` of the input is compared against `NS-Attr` following the same
-  decision logic described in <<trustzoneAcceptReject>>.
+  decision logic described in <<tzAcceptReject>>.
 
 === Hardware configuration
 
 ==== High-level configuration options
 
-There will be many small configuration options associated with an eIOPMP instance. In the following exercise we define capabilities that represent functional groupings of many underlying options.
+There will be many small configuration options associated with an eIOPMP
+instance. In the following exercise we define capabilities that represent
+functional groupings of many underlying options.
 
 * *Checker* – this capability indicates whether any checking at all is
   supported. Without this capability, all 3 tables (SRCMD, MDCFG, IOPMP entry

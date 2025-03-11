@@ -70,8 +70,7 @@ manage.
 
 * For ePMP, the two unused/reserved bits in `pmpcfgX` registers carry the
   NS-Attr value, and return `10b` if the platform isn't supporting this
-  mechanism. See <<trustzoneAcceptReject>> and <<epmpRegisterMap>> for more
-  detail.
+  mechanism. See <<tzAcceptReject>> and <<epmpRegisterMap>> for more detail.
 * For eIOPMP, the `HWCFG3.ns_en` register field determines if the platform is
   using the per-entry `ENTRY_CFG(i).ns_attr` field to carry the NS-Attr value.
   See <<nsattr>> for more detail, and <<eiopmphwcfg3>> and <<eiopmpentrycfg>>
@@ -117,10 +116,10 @@ _does_ adhere to such constraints, it may be necessary to either;
 
 ==== NS
 
-For multiple versions of AXI, the TrustZone "NS" bit has been encoded as the
-second bit of the `AxPROT` field, i.e. `AxPROT[1]`. It makes sense for RISC-V
+For multiple versions of AXI, the TZ "NS" bit has been encoded as the second
+bit of the `AxPROT` field, i.e. `AxPROT[1]`. It makes sense for RISC-V
 solutions to follow that convention also, and this is especially true if
-interacting with existing TrustZone-compatible IP.
+interacting with existing TZ-compatible IP.
 
 === Integration
 
@@ -128,7 +127,7 @@ As mentioned earlier in this chapter, certain integrations may wish to
 interpose a bus gasket to provide any additional normalization of WID/NS, as
 required.
 
-==== Integrating RISC-V into a TrustZone-centric SoC
+==== Integrating RISC-V into a TZ-centric SoC
 
 The SoC may only be signaling the `AxPROT[1]` bit, in which case it might be
 necessary to normalize the `AxNSAID` attribute on its behalf before
@@ -136,7 +135,7 @@ transactions enter the RISC-V-centric subsystem (e.g. by ensuring that secure
 transactions are tagged with `AxNSAID=0` and non-secure transactions are tagged
 with `AxNSAID=1` - thereby mapping TZ to WID).
 
-==== Integrating TrustZone IP into a WorldGuard-centric SoC
+==== Integrating TZ IP into a WG-centric SoC
 
 The SoC may only be signaling the `AxNSAID` attribute, in which case it would
 make sense to normalize the `AxPROT[1]` bit on its behalf before transactions

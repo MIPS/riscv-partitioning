@@ -9,31 +9,30 @@ This document architecturally reconciles 3 complementary but independent
 partitioning models:
 
 * WorldGuard, hereafter "WG"
-* TrustZone, hereafter "TZ"
+* TrustZone(R), hereafter "TZ"
 * Physical Memory Protection, hereafter "PMP";
 ** "ePMP" for processor-initiated transactions
 ** "IOPMP" for device-initiated transactions
 
-TrustZone is a technology developed by ARM for their processor families that
-creates an asymmetric division of a system into two isolated resource domains,
-one "Secure" and the other "Non-Secure".
+TZ is a security technology developed by ARM(R) for their processor families
+that creates an asymmetric division of a system into two isolated resource
+domains, one "Secure" and the other "Non-Secure".
 
-WorldGuard (unlike TrustZone) is a RISC-V-native solution for system
-partitioning, it allows one to create two or more isolated resource domains (up
-to some implementation-specific limit) and it provides ISA extensions that fit
+WG (unlike TZ) is a RISC-V-native solution for system partitioning, it allows
+one to create two or more isolated resource domains (up to some
+implementation-specific limit) and it provides ISA extensions that fit
 naturally into the RISC-V programming model.
 
 There are multiple reasons to want to achieve such a reconciliation, among them;
 
 * WorldGuard is by far the more natural ISA choice for RISC-V harts, and the
   more flexible option for RISC-V-based systems as a whole.
-* TrustZone is a natural fit for Trusted Execution Environment (TEE)-style
-  solutions, and has been underpinning such solutions for many years.
-* There is industry demand to be able to create RISC-V/ARM hybrid solutions,
-  e.g. by embedding RISC-V cores into ARM/TrustZone-centric SoCs (and vice
-  versa). In terms of interoperability, one cannot teach ARM TZ-based cores to
-  "speak WorldGuard", but one _can_ teach RISC-V WG-based cores to "speak
-  TrustZone".
+* TZ is a natural fit for Trusted Execution Environment (TEE)-style solutions,
+  and has been underpinning such solutions for many years.
+* There is industry demand to be able to create RISC-V/ARM(R) hybrid solutions,
+  e.g. by embedding RISC-V cores into ARM(R)/TZ-centric SoCs (and vice versa).
+  In terms of interoperability, one cannot teach TZ-based cores to "speak WG",
+  but one _can_ teach WG-based cores to "speak TZ".
 * Each of the technologies presents its own valuable properties in terms of
   programming model(s), and those properties should ideally be additive.
 
@@ -79,7 +78,7 @@ visually confirmed in <<hypervisor>>, <<hypervisorWGtree>>), __we will regulate
 the power-on defaults of WG registers, and require `mwid` be subject to
 `mwidlist`.__
 
-=== TrustZone
+=== TrustZone(R)
 
 AMBA protocols define a boolean security attribute (`AxPROT[1]` in AXI) that
 can be checked and interpreted at (or on route to) the transaction's target,

@@ -9,7 +9,7 @@ software running on RISC-V harts. TZ support is derived from WG support.
 
 === Preamble
 
-==== WorldGuard
+==== WG
 
 The WG solution proposes a sequence of incremental extensions that
 progressively add CSR registers but do not add any new instructions. We propose
@@ -37,12 +37,12 @@ that;
 ** Sane power-on defaults that behave as a system without any partitioning.
 * Some of the WG CSRs be exposed for external control.
 
-[[trustzone]]
-==== TrustZone
+[[tz]]
+==== TZ
 
 As stated above, support for TZ interoperability is derived from WG:
 
-* The ability to "speak TrustZone" comes from a single per-hart (M-mode,
+* The ability to "speak TZ" comes from a single per-hart (M-mode,
   secure-boot-lockable) CSR called `mwidseclist` that is used to map from WG
   state (the effective WID) to TZ state ("Secure" or "Non-Secure"). This is
   described in the next section.
@@ -282,16 +282,16 @@ hart to function under a Non-Secure `mwid`. Consider, if M-mode could change
 immediately, the instruction fetching would fail on the very next instruction
 (Secure WIDs cannot fetch from Non-Secure regions, and Non-Secure WIDs cannot
 fetch from Secure regions.footnote:[In fact, Secure WIDs _should_ not be able
-to fetch from Non-Secure regions, as is the case with TrustZone
-implementations, but we leave the enforcement of that constraint to the ePMP
-configuration.]) But due to these sampling semantics, M-mode can set `mwid` to
-a Non-Secure WID and then MRET to an instruction address that is Non-Secure -
-this triggers the sampling of the Non-Secure WID for it to take effect, which
-by that point will not fail to fetch instructions because the instructions
-after the MRET are being pulled from a Non-Secure region. For this to work,
-M-mode must ensure that no interrupts occur between the modification of `mwid`
-and the MRET, probably by disabling interrupts before the modification and
-reenabling them after the MRET.
+to fetch from Non-Secure regions, as is the case with TZ implementations, but
+we leave the enforcement of that constraint to the ePMP configuration.]) But
+due to these sampling semantics, M-mode can set `mwid` to a Non-Secure WID and
+then MRET to an instruction address that is Non-Secure - this triggers the
+sampling of the Non-Secure WID for it to take effect, which by that point will
+not fail to fetch instructions because the instructions after the MRET are
+being pulled from a Non-Secure region. For this to work, M-mode must ensure
+that no interrupts occur between the modification of `mwid` and the MRET,
+probably by disabling interrupts before the modification and reenabling them
+after the MRET.
 
 * The "effective WID" is the WID of the current privilege mode (as last
   sampled from the corresponding CSR).
@@ -304,14 +304,14 @@ reenabling them after the MRET.
 * The "effective security state" is the security state of the current privilege
   level.
 
-==== TrustZone privilege constraints
+==== TZ privilege constraints
 
 * If the hart is in S-mode, the security state of S-mode is Secure, and the
   security state of M-mode is Non-Secure, reject transaction.
 * If the hart is in U-mode, and the security states of S-mode and U-mode don't
   match, reject transaction.
 
-==== WorldGuard accept/reject
+==== WG accept/reject
 
 Please see <<hypervisorWGtree>> in <<hypervisor>> for a visual representation
 of this decision logic.
@@ -325,8 +325,8 @@ of this decision logic.
 * If the transaction is accepted, the effective WID is signaled on the outgoing
   transaction.
 
-[[trustzoneAcceptReject]]
-==== TrustZone accept/reject
+[[tzAcceptReject]]
+==== TZ accept/reject
 
 This decision involves comparing the "effective security state" against the
 security attribute of the physical address range being accessed (which may be a
@@ -339,9 +339,9 @@ other means.
 
 * ePMP will add the effective security state to its inputs (alongside current
   inputs: the current privilege mode, the address range, and the access type).
-* ePMP will add the TrustZone `NS-Attr` to the list of memory attributes it
-  considers, whether that is sourced from the platform's PMA infrastructure or
-  recorded in the ePMP's own configuration.
+* ePMP will add the TZ `NS-Attr` to the list of memory attributes it considers,
+  whether that is sourced from the platform's PMA infrastructure or recorded in
+  the ePMP's own configuration.
 * The NS-Attr memory attribute supports three options for the comparison with
   the effective security state and for determining the NS-Req state for the
   resulting transaction (if accepted).
@@ -351,7 +351,7 @@ other means.
 | NS-Attr | NS-Attr name | Permitted Non-Secure Requests | Permitted Secure Requests | Resulting NS-Req for transaction
 
 | `00b` | *Secure Memory* | None | Read, Write, Execute | Secure
-| `01b` | *Secure Private Non-Secure Memory* | None | Read, Write, Execute footnote:[As mentioned previously, a Secure instruction fetch request to a Non-Secure memory should probably be rejected. (That's what the TrustZone ISA does.) But given that the ePMP already supports separate Read/Write/eXecute permission attributes, we defer this decision to the configuration of ePMP.] | Non-Secure
+| `01b` | *Secure Private Non-Secure Memory* | None | Read, Write, Execute footnote:[As mentioned previously, a Secure instruction fetch request to a Non-Secure memory should probably be rejected. (That's what the TZ ISA does.) But given that the ePMP already supports separate Read/Write/eXecute permission attributes, we defer this decision to the configuration of ePMP.] | Non-Secure
 | `10b` | Unused/reserved/illegal | None | None | Fault
 | `11b` | *Non-Secure Memory* | Read, Write, Execute | Read, Write | Non-Secure
 |===

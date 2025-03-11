@@ -1,6 +1,6 @@
-= Secure system partitioning with WorldGuard & TrustZone
+= Secure system partitioning with RISC-V WorldGuard and ARM(R) TrustZone(R)
 :docgroup: RISC-V Task Group
-:description: :description: Secure system partitioning with WorldGuard & TrustZone
+:description: :description: Secure system partitioning with WorldGuard and ARM(R) TrustZone(R)
 :company: RISC-V.org
 :revdate: 2/2025
 :revnumber: 0.6
@@ -39,7 +39,7 @@ endif::[]
 :footnote:
 :xrefstyle: short
 
-= Secure system partitioning with WorldGuard & TrustZone
+= Secure system partitioning with WorldGuard and ARM(R) TrustZone(R)
 Non-existant Task Group
 
 // Preamble
@@ -53,8 +53,14 @@ specification will likely not conform to the future standard.
 
 [preface]
 == Preface
+
 include::copyright.adoc[]
 include::contributors.adoc[]
+
+=== Trademarks
+
+_ARM_ and _TrustZone_ are registered trademarks of Arm Limited (or its
+subsidiaries or affiliates) in the US and/or elsewhere.
 
 include::intro.adoc[]
 //include::notation.adoc[]

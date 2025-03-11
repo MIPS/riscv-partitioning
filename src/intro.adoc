@@ -6,7 +6,7 @@ This document describes a holistic solution for securely partitioning workloads
 on RISC-V-based platforms, based on (and by enhancing);
 
 * WorldGuard, per the publicly-available v0.4 specification
-* TrustZone(tm) interoperability, assuming AXI signalling
+* TrustZone(R) interoperability, assuming AXI signalling
 * ePMP, per the RISC-V privileged specification
 * IOPMP, per the v0.7 specification
 
