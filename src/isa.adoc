@@ -35,6 +35,8 @@ that;
 ** To support the Hypervisor extension, the addition of `hlwid`, `hwiddeleg`,
    and the associated behaviors.
 ** Alternative illegal-value semantics for the WG CSRs.
+** Power-on defaults are given that provide sane system defaults for systems
+   wishing to function without any partitioning.
 * Some of the WG CSRs be exposed for external control.
 
 [[trustzone]]
@@ -134,6 +136,8 @@ WARL behavior is required, a welcome simplification.)
 
 ==== Lockable partitioning registers
 
+`mwid`, `mwidlist`, `mwidseclist`
+
 * These are the CSR registers that are exposed for external configuration
   control.
 * These registers are assumed to be set statically to constrain the hart until
@@ -165,6 +169,8 @@ WARL behavior is required, a welcome simplification.)
   until the "L"ock bit is set in `mwid`.
 
 ==== Run-time manipulable registers
+
+`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`
 
 * These are the CSRs that are expected to be modified by M-mode and S-mode at
   run-time, though many use-cases will use static/unchanging values for these
@@ -352,6 +358,50 @@ other means.
 | `11b` | *Non-Secure Memory* | Read, Write, Execute | Read, Write | Non-Secure
 |===
 
+=== Power-on defaults
+
+The working assumption is that power-on defaults should serve the purpose of
+leaving the system without any effects or obligations associated with the
+partitioning functionality. This is mostly achieved by having all settings come
+up as "zero".footnote:[This is probably also the reason that TZ interprets the
+"NS" setting with zero as "Secure" and non-zero as "Non-Secure", because having
+"Secure" be the default provides "backward-compatibility", namely a system that
+is unrestricted by default.] External configuration (from a RoT) or early boot
+M-mode firmware can choose to impose "non-zero" restrictions, so it makes sense
+for the defaults to behave as though the system had neither WG nor TZ technology
+nor constraints in place.
+
+==== External configuration disabled or optional
+
+The one problem with the "zero method" is that the bitmask registers
+`mwidlist`, `mwiddeleg`, and `hwiddeleg` control which WIDs (at different
+privilege levels) are allowed to issue transactions, and so if those registers
+are zero, no mode will be able to issue an instruction fetch...
+
+* If the configuration of partitioning is (or might be) performed by the RISC-V
+  cores, then at the very least `mwidlist` must be set to `0x1`, to allow
+  M-mode to operate.
+* The above will suffice if M-mode can be obliged to initialize WG settings
+  before handing control to S-mode or U-mode. Otherwise, to have a system
+  default that requires no WG initialization, i.e. one that functions in all
+  modes as though WG was not present, then `mwiddeleg` and `hwiddeleg` should
+  also default to `0x1`.
+
+In <<wgRegisterMap>> below, we will assume the latter situation, such that the
+power-on defaults allow the system to function "as though WG (and TZ) was
+absent". If the implementation context has different requirements (such as an
+obligatory external configuration via RoT), the power-on defaults can be
+adapted, per this section.
+
+==== External configuration obligatory
+
+In this case, the "zero method" is arguably a security feature. If the power-on
+defaults for all WG registers is zero, external configuration is _necessary_
+before the harts can be released to execute (successfully). As such, the system
+owner is ensured that a RoT must have performed partitioning initialization
+prior to the subsystem being enabled to run.
+
+[[wgRegisterMap]]
 === WorldGuard Register map
 
 ==== Summary
@@ -359,18 +409,18 @@ other means.
 The following table contains both the CSRs proposed by the WG specification and
 those added by this proposal.
 
-[%header,cols="2,2,2,3"]
+[%header,cols="2,2,2,2,3"]
 |===
-| Register | Access | Proposed offset | Description
+| Register | Access | Proposed offset | Suggested default | Description
 
-| `mwid` | RW for M until locked | ??? | WID for M-mode
-| `mwidlist` | RW for M until locked | ??? | Set of allowable WIDs
-| `mwidseclist` | RW for M until locked | ??? | Set of Non-Secure WIDs
-| `mlwid` | RW for M | `0x390` | WID for (H)S-mode
-| `mwiddeleg` | RW for M | `0x748` | Set of WIDs delegated to (H)S-mode
-| `hlwid` | RW for (H)S | ??? | WID for VS-mode
-| `hwiddeleg` | RW for (H)S | ??? | Set of WIDs delegated to VS-mode
-| `slwid` | RW for S | `0x190` | WID for U-mode
+| `mwid` | RW for M until locked | ??? | `0x0` | WID for M-mode
+| `mwidlist` | RW for M until locked | ??? | `0x1` | Set of allowable WIDs
+| `mwidseclist` | RW for M until locked | ??? | `0x0` | Set of Non-Secure WIDs
+| `mlwid` | RW for M | `0x390` | `0x0` | WID for (H)S-mode
+| `mwiddeleg` | RW for M | `0x748` | `0x1` | Set of WIDs delegated to (H)S-mode
+| `hlwid` | RW for (H)S | ??? | `0x0` | WID for VS-mode
+| `hwiddeleg` | RW for (H)S | ??? | `0x1` | Set of WIDs delegated to VS-mode
+| `slwid` | RW for S | `0x190` | `0x0` | WID for U-mode
 |===
 
 The following sections provide more detail on each of these registers.

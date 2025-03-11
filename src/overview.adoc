@@ -68,9 +68,16 @@ be initialized as part of a secure-boot process and so may be driven by an
 external processing element (such as a discrete HSM block). __We will clarify
 how the augmented WG definition should be exposed for external configuration.__
 
-The publicly-available WorldGuard specification does not include adaptations
-for the Hypervisor extension. __We will augment the WG definition to support
-the Hypervisor extension.__
+The publicly-available WG specification does not include adaptations for the
+Hypervisor extension. __We will augment the WG definition to support the
+Hypervisor extension.__
+
+The WG specification leaves as "implementation-dependent" the detail around how
+`mwid` and `mwidlist` are initialized, and does not require that the former be
+contained within the latter. In the interests of consistency (as can be
+visually confirmed in <<hypervisor>>, <<hypervisorWGtree>>), __we will regulate
+the power-on defaults of WG registers, and require `mwid` be subject to
+`mwidlist`.__
 
 === TrustZone
 
