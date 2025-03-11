@@ -16,27 +16,25 @@ progressively add CSR registers but do not add any new instructions. We propose
 that;
 
 * All the WG extensions are supported and permanently enabled.
-** The complexity of incorporating the firstmost WG extension is close enough
-   to the complexity of incorporating them all that we find little benefit to
-   implementing intermediary levels, even in microcontroller form-factors. Not
-   having to support such intermediary levels also provides a welcome
-   simplification.
+** The complexity of the first WG extension is close enough to the complexity
+   of incorporating them all that we find little benefit to implementing
+   intermediary levels, even in microcontroller form-factors. Not having to
+   support such intermediary levels also provides a welcome simplification.
 ** It is reasonable to have WG permanently enabled because default settings can
    be obtained that provide behavior functionally equivalent to WG being
    disabled.
 * The publicly-available WG definition is modified;
-** For improvement of WG itself, the addition of `mwid` and `mwidlist` CSRs and
-   their respective behaviors.footnote:[There is a second publicly-available WG
+** For improvement of WG, addition of `mwid` and `mwidlist` CSRs and their
+   respective behaviors.footnote:[There is a second publicly-available WG
    document that suggests the existence of these two additional CSRs, but it
    does not specify any detail so we are treating our definition as a
    modification.]
-** For interaction with TZ, the addition of `mwidseclist` and its behavior.
-   (See "Secure worlds" below.)
-** To support the Hypervisor extension, the addition of `hlwid`, `hwiddeleg`,
-   and the associated behaviors.
+** For interaction with TZ, addition of `mwidseclist` and its behavior. (See
+   "Secure worlds" below.)
+** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`, and
+   associated behaviors.
 ** Alternative illegal-value semantics for the WG CSRs.
-** Power-on defaults are given that provide sane system defaults for systems
-   wishing to function without any partitioning.
+** Sane power-on defaults that behave as a system without any partitioning.
 * Some of the WG CSRs be exposed for external control.
 
 [[trustzone]]
@@ -81,7 +79,7 @@ transactions marked as "Secure" or "Non-Secure", in the TZ sense.
 
 The following diagram captures the WorldGuard decision tree (for core-emitted
 load/store/fetch transactions) as currently defined, without any support for
-the privilege levels introduced by the Hypervisor extension.
+the privilege modes introduced by the Hypervisor extension.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="WorldGuard non-Hypervisor decision tree"]
@@ -217,7 +215,7 @@ __Note: this should not be confused with the range of WIDs supported by an
 IOPMP input or any other WID-aware target on the bus - they may well use input
 WIDs as indices into a finite array of resources, and in particular those
 arrays might not have power-of-two geometry. Here we are only concerned with
-the range of WIDs that the core can assign to privilege levels, and from there,
+the range of WIDs that the core can assign to privilege modes, and from there,
 the range of WIDs that can be expressed on outgoing transactions. It is a
 hardware configuration task to ensure that transaction targets can absorb the
 range of WIDs they claim to support, and it is a software configuration task to
@@ -263,7 +261,7 @@ transaction.
 [[effectiveWIDSampling]]
 ==== Effective WID sampling
 
-The WID of each privilege level is determined by the following registers;
+The WID of each privilege mode is determined by the following registers;
 ....
           M-mode --> mwid
        HS/S-mode --> mlwid
@@ -274,8 +272,8 @@ __Note however that writes to these WID registers do not take effect
 immediately, rather they are sampled by the implementation during
 [.underline]#potentially# privilege-level-changing events, specifically by all
 MRET and SRET instructions and across all traps/interrupts. (I.e. the values
-are resampled at all points where the privilege level [.underline]#could#
-change, whether or not the privilege level [.underline]#actually# changes.)__
+are resampled at all points where the privilege mode [.underline]#could#
+change, whether or not the privilege mode [.underline]#actually# changes.)__
 
 The justification for this sampling behavior, rather than register writes
 having immediate effect, is the case where M-mode is preparing for the entire
@@ -295,12 +293,12 @@ M-mode must ensure that no interrupts occur between the modification of `mwid`
 and the MRET, probably by disabling interrupts before the modification and
 reenabling them after the MRET.
 
-* The "effective WID" is the WID of the current privilege level (as last
+* The "effective WID" is the WID of the current privilege mode (as last
   sampled from the corresponding CSR).
 
 ==== Effective security state (NS)
 
-* The security state of a privilege level is determined by using that privilege
+* The security state of a privilege mode is determined by using that privilege
   level's WID as an index into the `mwidseclist` register (0="Secure",
   1="Non-Secure").
 * The "effective security state" is the security state of the current privilege
@@ -340,7 +338,7 @@ the ePMP, though implementations are free to provide these behaviors through
 other means.
 
 * ePMP will add the effective security state to its inputs (alongside current
-  inputs: the current privilege level, the address range, and the access type).
+  inputs: the current privilege mode, the address range, and the access type).
 * ePMP will add the TrustZone `NS-Attr` to the list of memory attributes it
   considers, whether that is sourced from the platform's PMA infrastructure or
   recorded in the ePMP's own configuration.
@@ -375,7 +373,7 @@ nor constraints in place.
 
 The one problem with the "zero method" is that the bitmask registers
 `mwidlist`, `mwiddeleg`, and `hwiddeleg` control which WIDs (at different
-privilege levels) are allowed to issue transactions, and so if those registers
+privilege modes) are allowed to issue transactions, and so if those registers
 are zero, no mode will be able to issue an instruction fetch...
 
 * If the configuration of partitioning is (or might be) performed by the RISC-V

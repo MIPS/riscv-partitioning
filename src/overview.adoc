@@ -109,7 +109,7 @@ each physical address range in the ePMP configuration.__
 
 ePMP is the per-hart mechanism used by RISC-V cores to partition the physical
 address space with privilege-based access controls. These control access to
-physical address ranges based on the active privilege level of the hart and the
+physical address ranges based on the active privilege mode of the hart and the
 attempted access type. As with the other partitioning mechanisms, it naturally
 lends itself to having "lockable" configuration, to constrain M-mode access in
 a way that it can't subsequently reconfigure (without a reset).
