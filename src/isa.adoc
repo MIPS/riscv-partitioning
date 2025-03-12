@@ -53,11 +53,18 @@ As stated above, support for TZ interoperability is derived from WG:
   state (the effective WID) to TZ state ("Secure" or "Non-Secure"). This is
   described in the next section.
 * A run-time privilege constraint is defined that mimics the behavior expected
-  of TZ software models, namely;
-** S-mode cannot have a more secure state than M-mode, and
-** S-mode and U-mode must have the same security state. I.e.
+  of TZ software models, namely that;
+** The most secure privilege level cannot be Non-Secure unless all privilege
+   levels are Non-Secure. In RISC-V terms, S-mode cannot have a more secure
+   state than M-mode. I.e.
 ....
     SecureLevel(M-mode) >= SecureLevel(S-mode)
+....
+** The switching between Secure and Non-Secure worlds occurs at the most
+   privileged security level, so lower privilege levels are either all
+   Secure or Non-Secure, but not mixed. In RISC-V terms, S-mode and U-mode must
+   have the same security state. I.e.
+....
     SecureLevel(S-mode) == SecureLevel(U-mode)
 ....
 * Implementations must also provide a means for determining the NS-Attr of
