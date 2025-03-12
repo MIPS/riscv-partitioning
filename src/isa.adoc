@@ -11,6 +11,12 @@ software running on RISC-V harts. TZ support is derived from WG support.
 
 ==== WG
 
+Note that the WG proposal posits the potential existence of WG-unaware cores
+that could be served by an external marker, in the same way that an IOPMP can
+be used with a WG-unaware device initiator to mark its outgoing transactions.
+In this proposal, we focus on WG-aware cores and leave the case of WG-unaware
+cores as out-of-scope.
+
 The WG solution proposes a sequence of incremental extensions that
 progressively add CSR registers but do not add any new instructions. We propose
 that;
