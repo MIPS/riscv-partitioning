@@ -255,9 +255,10 @@ of outgoing transactions.
 The ISA inherently limits the number of supported WIDs ("NWorlds" in WG terms)
 to `XLEN`,footnote:[whether `XLEN` is 32, 64, or 128 depends on the RISC-V
 hardware configuration] as there are XLEN-bit registers that serve as WID
-bitmasks (`mwidlist`, `mwiddeleg`, `mwidseclist`, `hwiddeleg`). However, the
-actual ISA-supported range of WIDs may be a smaller power of 2. (It may even be
-just 2.)
+footnote:[the architecture could be extended by using multi-register bitmasks,
+but the marginal value of doing so is expected to be low.]bitmasks (`mwidlist`,
+`mwiddeleg`, `mwidseclist`, `hwiddeleg`). However, the actual ISA-supported
+range of WIDs may be a smaller power of 2. (It may even be just 2.)
 
 Software/firmware can discover the supported widths by writing a register with
 all ones and reading the value back - the unsupported bits will read back as
