@@ -327,11 +327,12 @@ after the MRET.
 * The "effective WID" is the WID of the current privilege mode (as last
   sampled from the corresponding CSR).
 
-==== Effective security state (NS)
+==== Effective security state (NS-Req)
 
 * The security state of a privilege mode is determined by using that privilege
   level's WID as an index into the `mwidseclist` register (0="Secure",
-  1="Non-Secure").
+  1="Non-Secure"). Zero is an appropriate default for parts that require no TZ
+  support.
 * The "effective security state" is the security state of the current privilege
   level.
 
