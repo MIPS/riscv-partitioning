@@ -338,10 +338,18 @@ after the MRET.
 
 ==== TZ privilege constraints
 
+These checks implement the "run-time privilege constraint" described in <<tz>>.
+
 * If the hart is in S-mode, the security state of S-mode is Secure, and the
   security state of M-mode is Non-Secure, reject transaction.
 * If the hart is in U-mode, and the security states of S-mode and U-mode don't
   match, reject transaction.
+
+It should be noted that, semantically, a privilege constraint fails on the
+first instruction fetch after the `xRET` instruction, even if the
+implementation detects the anomalous condition earlier than that. Similarly,
+after the fault, the values in `xstatus/xcause/`[...] will reflect the
+instruction address and privilege mode targetted by the `xRET` instruction.
 
 ==== WG accept/reject
 
