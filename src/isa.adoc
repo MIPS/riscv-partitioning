@@ -358,7 +358,7 @@ of this decision logic.
 
 * If the hart is in VU-mode (i.e. when U-mode and `V=1`), and if the effective
   WID is not set in `hwiddeleg`, reject transaction.
-* If the hart is in VS-mode (i.e. when V-mode and `V=1`) or in any kind of
+* If the hart is in VS-mode (i.e. when S-mode and `V=1`) or in any kind of
   U-mode, and if the effective WID is not set in `mwiddeleg`, reject
   transaction.
 * If the effective WID is not set in `mwidlist`, reject transaction.
