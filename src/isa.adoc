@@ -92,7 +92,10 @@ transactions marked as "Secure" or "Non-Secure", in the TZ sense.
 
 The following diagram captures the WorldGuard decision tree (for core-emitted
 load/store/fetch transactions) as currently defined, without any support for
-the privilege modes introduced by the Hypervisor extension.
+the privilege modes introduced by the Hypervisor extension. Please note that
+the nested checking, whereby a mwiddeleg check is followed by a mwidlist check,
+is the reason that we don't have to insist that mwiddeleg be a subset of
+mwidlist, and the reason why we can avoid "illegal value" semantics.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="WorldGuard non-Hypervisor decision tree"]
