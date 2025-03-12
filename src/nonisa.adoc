@@ -48,6 +48,24 @@ to main memory is typically a large multiple of the cache-hit latency. In other
 cases, a DMA engine with input and output mapped to different WIDs (providing
 single-copy) may be a better approach for inter-world communication.
 
+==== Alternative to cache-tagging
+
+As previously stated, the WG model typically assumes that the source is
+performing "marking" and that checkers are used en-route or at the target to
+perform access control. This is justified on the basis that any requirement for
+"source-side" checking can be handled by the ePMP. However, as we have seen,
+having the checking performed downstream in cache hierarchy requires
+cache-tagging.
+
+An alternative model is to implement a WID checker within or alongside the
+ePMP. (This would be analogous to how the TZ model performs a source-side check
+against NS-Attr attributes _as well as_ tagging outgoing transactions.) In this
+model, there is no authoratative checker downstream from the cache, and so that
+cache does not need to tag cache lines with WIDs. Note, this kind of
+source-checking could be provided by an appropriately-configured eIOPMP
+instance. See <<eiopmp>> for more detail. The exploration of such an option is
+outside the scope of this document.
+
 === NS-Attr and Physical Memory Attributes (PMAs)
 
 One of the properties of TZ is that it includes source-side checking, whereby
