@@ -116,9 +116,17 @@ What remains is to define the expected behavior for the `VS` and `VU` states,
 which we do via the addition of two `HS`-level registers (that are not visible
 to `VS`), called `hlwid` and `hwiddeleg`. These extend the existing WID and
 WID-delegation concepts to the additional level of privilege hierarchy that the
-H extension introduces. The following diagram extends the previous one to
-illustrate the WorldGuard decision tree when the Hypervisor extension is
-enabled;
+H extension introduces.
+
+Note that there is no provision in this extension for the virtualization of
+WIDs. The delegation mechanism with `mwiddeleg` allows M-mode to control the
+WIDs that (H)S-mode can use and assign to lower levels (and within that,
+`hwiddeleg` allows HS-mode to control the WIDs that VS-mode has to work with),
+but that only limits the set of WIDs that can be used, it does not change their
+enumeration.
+
+The following diagram extends the previous one to illustrate the WorldGuard
+decision tree when the Hypervisor extension is enabled;
 
 [[hypervisorWGtree]]
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
