@@ -391,7 +391,7 @@ other means.
 | NS-Attr | NS-Attr name | Permitted Non-Secure Requests | Permitted Secure Requests | Resulting NS-Req for transaction
 
 | `00b` | *Secure Memory* | None | Read, Write, Execute | Secure
-| `01b` | *Secure Private Non-Secure Memory* | None | Read, Write, Execute footnote:[As mentioned previously, a Secure instruction fetch request to a Non-Secure memory should probably be rejected. (That's what the TZ ISA does.) But given that the ePMP already supports separate Read/Write/eXecute permission attributes, we defer this decision to the configuration of ePMP.] | Non-Secure
+| `01b` | *Secure Private Non-Secure Memory* | None | Read, Write | Non-Secure
 | `10b` | Unused/reserved/illegal | None | None | Fault
 | `11b` | *Non-Secure Memory* | Read, Write, Execute | Read, Write | Non-Secure
 |===
