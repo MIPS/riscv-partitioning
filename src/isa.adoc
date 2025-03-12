@@ -235,16 +235,22 @@ is constrained only by;
   transaction path, and
 * the number of bits implemented in registers that serve as WID bitmasks.
 
-__Note: this should not be confused with the range of WIDs supported by an
-IOPMP input or any other WID-aware target on the bus - they may well use input
-WIDs as indices into a finite array of resources, and in particular those
-arrays might not have power-of-two geometry. Here we are only concerned with
-the range of WIDs that the core can assign to privilege modes, and from there,
-the range of WIDs that can be expressed on outgoing transactions. It is a
-hardware configuration task to ensure that transaction targets can absorb the
-range of WIDs they claim to support, and it is a software configuration task to
-not use any WIDs that might be expressible by the ISA but not supported by the
-targets of outgoing transactions!__
+__Note: this should not be confused with the range of WIDs supported by any
+given WID-aware target on the bus.__ Those targets may well use input WIDs as
+indices into a finite array of resources, and those arrays might not even have
+power-of-two geometry. I.e. each target supports a given set of WID inputs, and
+how that set overlaps (or otherwise) with the set of WIDs that the ISA can
+express is outside the scope of this document.
+
+Here we are only concerned with the range of WIDs that can be expressed on
+outgoing transactions, i.e. the range of WIDs that the core can assign to
+privilege modes.
+
+****
+It is a software configuration responsibility to avoid the use of WIDs that the
+ISA is able to express but that are outside the bounds supported by the targets
+of outgoing transactions.
+****
 
 The ISA inherently limits the number of supported WIDs ("NWorlds" in WG terms)
 to `XLEN`,footnote:[whether `XLEN` is 32, 64, or 128 depends on the RISC-V
