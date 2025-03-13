@@ -93,9 +93,9 @@ transactions marked as "Secure" or "Non-Secure", in the TZ sense.
 The following diagram captures the WorldGuard decision tree (for core-emitted
 load/store/fetch transactions) as currently defined, without any support for
 the privilege modes introduced by the Hypervisor extension. Please note that
-the nested checking, whereby a mwiddeleg check is followed by a mwidlist check,
-is the reason that we don't have to insist that mwiddeleg be a subset of
-mwidlist, and the reason why we can avoid "illegal value" semantics.
+the nested checking, whereby a `mwiddeleg` check is followed by a `mwidlist`
+check, is the reason that we don't have to insist that `mwiddeleg` be a subset
+of `mwidlist`, and the reason why we can avoid "illegal value" semantics.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="WorldGuard non-Hypervisor decision tree"]
@@ -312,17 +312,14 @@ hart to function under a Non-Secure `mwid`. Consider, if M-mode could change
 `mwid` from a Secure WID to a Non-Secure WID and have it take effect
 immediately, the instruction fetching would fail on the very next instruction
 (Secure WIDs cannot fetch from Non-Secure regions, and Non-Secure WIDs cannot
-fetch from Secure regions.footnote:[In fact, Secure WIDs _should_ not be able
-to fetch from Non-Secure regions, as is the case with TZ implementations, but
-we leave the enforcement of that constraint to the ePMP configuration.]) But
-due to these sampling semantics, M-mode can set `mwid` to a Non-Secure WID and
-then MRET to an instruction address that is Non-Secure - this triggers the
-sampling of the Non-Secure WID for it to take effect, which by that point will
-not fail to fetch instructions because the instructions after the MRET are
-being pulled from a Non-Secure region. For this to work, M-mode must ensure
-that no interrupts occur between the modification of `mwid` and the MRET,
-probably by disabling interrupts before the modification and reenabling them
-after the MRET.
+fetch from Secure regions.) But due to these sampling semantics, M-mode can set
+`mwid` to a Non-Secure WID and then MRET to an instruction address that is
+Non-Secure - this triggers the sampling of the Non-Secure WID for it to take
+effect, which by that point will not fail to fetch instructions because the
+instructions after the MRET are being pulled from a Non-Secure region. For this
+to work, M-mode must ensure that no interrupts occur between the modification
+of `mwid` and the MRET, probably by disabling interrupts before the
+modification and reenabling them after the MRET.
 
 * The "effective WID" is the WID of the current privilege mode (as last
   sampled from the corresponding CSR).
