@@ -54,20 +54,20 @@ specification will likely not conform to the future standard.
 [preface]
 == Preface
 
-include::copyright.adoc[]
-include::contributors.adoc[]
+include::00_copyright.adoc[]
+include::00_contributors.adoc[]
 
 === Trademarks
 
 _ARM_ and _TrustZone_ are registered trademarks of Arm Limited (or its
 subsidiaries or affiliates) in the US and/or elsewhere.
 
-include::intro.adoc[]
+include::01_intro.adoc[]
 //include::notation.adoc[]
 //include::glossary.adoc[]
-include::overview.adoc[]
-include::extconfig.adoc[]
-include::isa.adoc[]
-include::nonisa.adoc[]
-include::eiopmp.adoc[]
+include::02_overview.adoc[]
+include::03_extconfig.adoc[]
+include::04_isa.adoc[]
+include::05_nonisa.adoc[]
+include::06_eiopmp.adoc[]
 //include::bibliography.adoc[]
