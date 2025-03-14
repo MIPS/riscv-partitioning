@@ -372,6 +372,13 @@ other means.
 | `11b` | *Non-Secure Memory* | Read, Write, Execute | Read, Write | Non-Secure
 |===
 
+A note about MMU page table walks, whose memory access are performed in the
+context of S-mode and therefore use the S-mode WID. _Page table entries cannot
+be located in "Secure Private Non-Secure Memory"._ If the S-mode WID is Secure,
+then page-table entries are expected to be in "Secure Memory" only, and if the
+S-mode WID is Non-Secure, the page-table entries are expected to be in
+"Non-Secure Memory" also.
+
 [[nonSecureHarts]]
 === Non-Secure harts
 
