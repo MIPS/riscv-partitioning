@@ -82,7 +82,7 @@ the power-on defaults of WG registers, and require `mwid` be subject to
 
 AMBA protocols define a boolean security attribute (`AxPROT[1]` in AXI) that
 can be checked and interpreted at (or on route to) the transaction's target,
-giving rise to the TZ concept of "Secure" (versus "Non-Secure") partitions.  TZ
+giving rise to the TZ concept of "Secure" (versus "Non-Secure") partitions. TZ
 documentation refers to these two partitions as "worlds", but we avoid doing so
 to avoid confusion with the WorldGuard concept of the same name.
 
@@ -94,14 +94,14 @@ in the same manner, and NS to generically refer to both.
 Whereas the WG model assumes that transaction sources are markers but not
 checkers,footnote:[This is justified by the fact that, if source-side checking
 is required in a RISC-V and WG based system, ePMP/IOPMP can provide that
-functionality.] TZ assumes that the initiator performs source-side checking
-before allowing a transaction to be emitted and tagged with the current NS
-state. As such, in order to support TZ-style source-checking, a means is
-required for determining the NS-Attr(s) of a given physical address range. This
-might be achieved by the addition of an "NS-Attr" PMA (Physical Memory
-Attribute) or through some other implementation-specific mechanism. __We will
-propose an optional "NS-Attr" field in the PMP configuration CSRs that can be
-used on platforms that prefer to have the NS-Attr attribute be recorded for
+functionality.] TZ assumes that the initiator performs some source-side
+checking before allowing a transaction to be emitted and tagged with the
+current NS state. As such, in order to support TZ-style source-checking, a
+means is required for determining the NS-Attr(s) of a given physical address
+range. This might be achieved by the addition of an "NS-Attr" PMA (Physical
+Memory Attribute) or through some other implementation-specific mechanism. __We
+will propose an optional "NS-Attr" field in the PMP configuration CSRs that can
+be used on platforms that prefer to have the NS-Attr attribute be recorded for
 each physical address range in the ePMP configuration.__
 
 === ePMP
