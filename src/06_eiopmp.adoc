@@ -368,13 +368,13 @@ functional groupings of many underlying options.
 ** *cAddress* – this sub-capability of Checker indicates whether any address
    checking is supported. Without this capability, the checking logic will
    match on the first IOPMP entry consulted for the given RRID/WID. (If the
-   IOPMP model is such that multiple IOPMP entries referenced for the given
+   IOPMP model is such that multiple IOPMP entries are referenced for the given
    RRID/WID, the lowest-valued index is the only one that will be considered.)
    Importantly, without this capability, the physical addresses in the IOPMP
-   can be compiled out, for a noticeable footprint reduction in checker logic.
+   can be compiled out, for a noticeable footprint reduction.
 * *Marker* – this is the capability of marking an outgoing transaction with a
   (potentially different) WID. Without this capability, outgoing transactions
-  always carry the same RRID/WID they arrived with. This capability is
+  always carry the same RRID/WID that they arrived with. This capability is
   complementary to Checker – per-IOPMP-entry marking is supported if and only
   if both Checker and Marker are supported.
 

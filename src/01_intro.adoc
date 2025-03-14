@@ -12,9 +12,9 @@ on RISC-V-based platforms, based on (and by enhancing);
   version numbering when it was previously at or around version "0.9.2-RC3". As
   of début March 2025, v0.7 is the current release.]
 
-This solution was arrived at by MIPS as part of its security architecture
-development and it is hoped that it might provide a general solution for the
-RISC-V ecosystem, hence the contribution of this document.
+This solution is developed by MIPS as part of its security architecture work
+and it is hoped that it might provide a some useful input to the development of
+RISC-V standards and approaches, hence the contribution of this document.
 
 The goals of this document are;
 

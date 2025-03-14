@@ -199,13 +199,12 @@ WARL behavior is required, a welcome simplification.)
   run-time, though many use-cases will use static/unchanging values for these
   CSRs also. These CSRs are not lockable and are not exported for external
   configuration, and so they are not considered part of the partitioning
-  configuration (rather, they are the _users_ of the partitioning
-  configuration).
+  configuration (rather, they work within the partitioning configuration).
 * `mlwid`: this register determines the effective WID of (H)S-mode. Though it
   makes sense for the corresponding bit in `mwidlist` to be set, there is no
   need to enforce such relationships at the register level, the catastrophic
   effects of this kind of misconfiguration will take care of matters. (Loads,
-  stores, and instruction fetches will be blocked for M mode.)
+  stores, and instruction fetches will be blocked for S-mode.)
 * `hlwid`: this register determines the effective WID of VS-mode. It makes sense
   for the corresponding bits in `mwidlist` and `mwiddeleg` to be set, but there
   is no need to enforce such a relationship at the register level.
@@ -446,7 +445,7 @@ In <<wgRegisterMap>> below, we will assume the latter situation, such that the
 power-on defaults allow the system to function "as though WG (and TZ) was
 absent". If the implementation context has different requirements (such as an
 obligatory external configuration via RoT), the power-on defaults can be
-adapted, per this section.
+adapted, as per the next subsection...
 
 ==== External configuration obligatory
 
