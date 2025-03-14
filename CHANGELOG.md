@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2025-03-13
+- Power-on defaults
+- Updated title, trademark notes, etc.
+- Remove "WID-sampling" workaround.
+- Numerous fixes, retouches, and clarifications
+
 ## [0.6.0] - 2025-03-10
 - Hypervisor support
 - Convert from 32-bit to XLEN-bit
