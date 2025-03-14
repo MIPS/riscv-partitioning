@@ -86,8 +86,14 @@ that it emits).
 
 The key addition is the `mwidseclist` CSR. Like `mwidlist` and `mwiddeleg`,
 this is a bitmask with a single bit representing each WID. The `mwidseclist`
-CSR acts as a mask to determine for any given WID whether it should emit
-transactions marked as "Secure" or "Non-Secure", in the TZ sense.
+CSR acts as a mask to determine for any given WID whether it may emit
+transactions marked as "Secure" or must always emit transactions marked as
+"Non-Secure", in the TZ sense.
+
+Note, this definition strictly associates a WG WID with a corresponding TZ
+NS-Req (Secure/Non-Secure) state _within a hart_. It is beyond the scope of
+this document as to whether or not the other harts within the same system (or
+even the same core) should use the same WID/NS associations.
 
 [[nonHypervisorTree]]
 === Non-hypervisor decision tree
