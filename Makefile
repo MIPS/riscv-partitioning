@@ -89,6 +89,7 @@ build: $(TOUCHFILE)
 
 # TBD: remove the sed line when copyright is no longer redirected to MIPS
 $(TOUCHFILE): $(DEPS) | $(DESTDIR)
+	$(V)sed -i.bak "s/RISC-V International/MIPS/g" docs-resources/themes/riscv-pdf.yml
 	@echo "[BUILD $(DOC) -> $(DESTDIR)]"
 	$(V)$(BUILDCMD)
 	$(V)echo 'BUILDCMD := $(BUILDCMD)' > $@
