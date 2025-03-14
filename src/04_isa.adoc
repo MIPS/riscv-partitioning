@@ -12,10 +12,8 @@ software running on RISC-V harts. TZ support is derived from WG support.
 ==== WG
 
 Note that the WG proposal posits the potential existence of WG-unaware cores
-that could be served by an external marker, in the same way that an IOPMP can
-be used with a WG-unaware device initiator to mark its outgoing transactions.
-In this proposal, we focus on WG-aware cores and leave the case of WG-unaware
-cores as out-of-scope.
+that could be served by an external marker. In this proposal, we focus on
+WG-aware cores and leave the case of WG-unaware cores as out-of-scope.
 
 The WG solution proposes a sequence of incremental extensions that
 progressively add CSR registers but do not add any new instructions. We propose
@@ -35,8 +33,11 @@ that;
    document that suggests the existence of these two additional CSRs, but it
    does not specify any detail so we are treating our definition as a
    modification.]
-** For interaction with TZ, addition of `mwidseclist` and its behavior. (See
-   "Secure worlds" below.)
+** For TZ behavior;
+*** Addition of `mwidseclist` and its behavior. (See "Secure worlds" below in
+    <<secureWorlds>>.)
+*** Guidance on M-mode switching itself between Secure and Non-Secure. (See
+    "Non-Secure harts" below in <<nonSecureHarts>>.)
 ** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`, and
    associated behaviors.
 ** Alternative illegal-value semantics for the WG CSRs.
@@ -75,6 +76,7 @@ As stated above, support for TZ interoperability is derived from WG:
    the ePMP and/or eIOPMP configurations themselves, as described in this
    proposal.
 
+[[secureWorlds]]
 === Secure worlds
 
 The most structurally important change relates to the "TrustZonification" of WG
@@ -171,13 +173,6 @@ WARL behavior is required, a welcome simplification.)
 * These partitioning registers place no constraints on the order in which
   they're read or written. (This simplifies the hardware design and resulting
   programming model.)
-* These registers are sampled by each MRET/SRET instruction and on every
-  fault/trap/interrupt (i.e. at every potentially-privilege-level-changing
-  event), to calculate the effective WID and security state. The rationale for
-  this is explained in <<effectiveWIDSampling,Effective WID sampling>>. As with
-  ePMP, these registers obey the standard RISC-V ordering rules for implicit
-  CSR reads. (This bounds any additional DV effort by matching existing
-  well-defined CSR behavior.)
 * `mwid` and `mwidlist`: though it would make sense for the `mwid` WID to be
   set in `mwidlist`, there is no need to enforce it at the register level, the
   catastrophic effect of the mis-configuration will take care of itself.
@@ -289,8 +284,7 @@ In the cases where the decision is to accept the transaction, this decision
 logic also determines the WID and NS values with which to tag the outgoing
 transaction.
 
-[[effectiveWIDSampling]]
-==== Effective WID sampling
+==== Effective WID
 
 The WID of each privilege mode is determined by the following registers;
 ....
@@ -299,30 +293,8 @@ The WID of each privilege mode is determined by the following registers;
          VS-mode --> hlwid
     HU/VU/U-mode --> slwid
 ....
-__Note however that writes to these WID registers do not take effect
-immediately, rather they are sampled by the implementation during
-[.underline]#potentially# privilege-level-changing events, specifically by all
-MRET and SRET instructions and across all traps/interrupts. (I.e. the values
-are resampled at all points where the privilege mode [.underline]#could#
-change, whether or not the privilege mode [.underline]#actually# changes.)__
 
-The justification for this sampling behavior, rather than register writes
-having immediate effect, is the case where M-mode is preparing for the entire
-hart to function under a Non-Secure `mwid`. Consider, if M-mode could change
-`mwid` from a Secure WID to a Non-Secure WID and have it take effect
-immediately, the instruction fetching would fail on the very next instruction
-(Secure WIDs cannot fetch from Non-Secure regions, and Non-Secure WIDs cannot
-fetch from Secure regions.) But due to these sampling semantics, M-mode can set
-`mwid` to a Non-Secure WID and then MRET to an instruction address that is
-Non-Secure - this triggers the sampling of the Non-Secure WID for it to take
-effect, which by that point will not fail to fetch instructions because the
-instructions after the MRET are being pulled from a Non-Secure region. For this
-to work, M-mode must ensure that no interrupts occur between the modification
-of `mwid` and the MRET, probably by disabling interrupts before the
-modification and reenabling them after the MRET.
-
-* The "effective WID" is the WID of the current privilege mode (as last
-  sampled from the corresponding CSR).
+* The "effective WID" is the WID of the current privilege mode.
 
 ==== Effective security state (NS-Req)
 
@@ -392,6 +364,40 @@ other means.
 | `10b` | Unused/reserved/illegal | None | None | Fault
 | `11b` | *Non-Secure Memory* | Read, Write, Execute | Read, Write | Non-Secure
 |===
+
+[[nonSecureHarts]]
+=== Non-Secure harts
+
+If the intention is for an entire hart to run as Non-Secure, i.e. for the WID
+assigned to M-mode to be Non-Secure, there is a subtlety to note about
+modifications to the `mwid` and `mwidseclist` CSR registers.
+
+Consider, if the current `mwid` and `mwidseclist` CSR values imply that the
+effective security state of M-mode is Secure, then any M-mode instruction
+fetches must necessarily be going to Secure Memory. (Conversely if the
+effective security state of M-mode is Non-Secure, the M-mode instruction
+fetches must be to/from Non-Secure Memory.) It follows that M-mode can never
+safely cause its current security state to change by issuing writes to `mwid`
+or `mwidseclist`, because the write that triggers the change of security state
+will be followed immediately by an instruction fetch fault, as the next
+instruction is being fetched from the same type of memory as before, but the
+changed security state now expects the opposite type of memory.
+
+Now, if the configuration of a Non-Secure `mwid` is via external configuration,
+before the harts are executing, this problem doesn't arise. Likewise, if M-mode
+doesn't need to support running in a Non-Secure state, no problem. This issue
+only arises if M-mode is performing the security state change within the hart
+itself through write operations.
+
+The recommended solution, for any platform/implementation that needs to handle
+this case, is to "embrace the fault". Namely, in preparation for changing
+M-mode's security state, the trap vectors will necessarily need to be changed
+to point to the type of memory that the new security state will expect, and so
+once M-mode makes the write that triggers the change of security state, the
+following instruction fetch will fault into a M-mode trap handler that is
+running out of the type of memory that the new security state expects. In this
+way, control is passed from the previously-required memory type to the
+newly-required memory type.
 
 === Power-on defaults
 
