@@ -21,6 +21,6 @@ The goals of this document are;
 * to describe how these technologies can be adapted to work together in a
   complementary manner,
 * to permit review and refinement by RISC-V stakeholders, and
-* to facilitate the integration of enhancements into their respective upstream
-  projects in a coordinated fashion.
+* to propose and facilitate the contribution of various enhancements into their
+  respective upstream projects/specifications.
 

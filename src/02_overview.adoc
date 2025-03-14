@@ -5,8 +5,8 @@
 
 === Reconciling technologies
 
-This document architecturally reconciles 3 complementary but independent
-partitioning models:
+This document attempts to architecturally reconcile 3 complementary but
+independent partitioning models:
 
 * WorldGuard, hereafter "WG"
 * TrustZone(R), hereafter "TZ"
