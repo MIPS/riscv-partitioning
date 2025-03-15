@@ -1,0 +1,13 @@
+[[glossary]]
+=== Glossary
+
+[%header,cols="1,4"]
+|===
+
+| Term(s) | Description
+| TCB/TCG | Trusted Computing Base/Group, see https://trustedcomputinggroup.org.
+| TZ, TrustZone(R) | A system partitioning solution developed by https://www.arm.com[ARM(R)].
+| WG, WorldGuard | A system partitioning solution originally developed by https://www.sifive.com[SiFive Inc.]
+
+|===
+

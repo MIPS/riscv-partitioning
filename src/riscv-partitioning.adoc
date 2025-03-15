@@ -62,9 +62,9 @@ include::00_contributors.adoc[]
 _ARM_ and _TrustZone_ are registered trademarks of Arm Limited (or its
 subsidiaries or affiliates) in the US and/or elsewhere.
 
+include::00_glossary.adoc[]
 include::01_intro.adoc[]
 //include::notation.adoc[]
-//include::glossary.adoc[]
 include::02_overview.adoc[]
 include::03_extconfig.adoc[]
 include::04_isa.adoc[]
