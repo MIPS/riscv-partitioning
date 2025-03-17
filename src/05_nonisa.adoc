@@ -74,11 +74,11 @@ and so it can compare that against its current NS state to determine whether or
 not to emit the requested load/store/fetch transaction. (The former is called
 NS-Attr, and the latter is called NS-Req.)
 
-One natural adaptation on RISC-V to provide equivalent/compatible behavior is
-to add a new PMA type to represent NS-Attr. The way in which PMAs are
+One natural adaptation for RISC-V to provide equivalent/interoperable behavior
+is to add a new PMA type to represent NS-Attr. The way in which PMAs are
 coordinated in RISC-V is left to each implementation, but the assumption is
-that the hart can obtain the PMAs for any given physical address range that is
-considering accessing. Whether (and how) distinct blocks (like eIOPMP
+that the hart can obtain the PMAs for any given physical address range that it
+is considering accessing. Whether (and how) distinct blocks (like eIOPMP
 instances) can obtain NS-Attr attributes in an equivalent manner is also
 implementation-dependent.
 
