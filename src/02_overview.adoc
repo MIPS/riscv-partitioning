@@ -72,11 +72,8 @@ Hypervisor extension. __We will augment the WG definition to support the
 Hypervisor extension.__
 
 The WG specification leaves as "implementation-dependent" the detail around how
-`mwid` and `mwidlist` are initialized, and does not require that the former be
-contained within the latter. In the interests of consistency (as can be
-visually confirmed in <<hypervisor>>, <<hypervisorWGtree>>), __we will regulate
-the power-on defaults of WG registers, and require `mwid` be subject to
-`mwidlist`.__
+`mwid` and `mwidlist` are initialized. __We will document options for
+the power-on defaults of WG registers.__
 
 === TrustZone(R)
 

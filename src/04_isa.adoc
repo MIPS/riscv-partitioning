@@ -179,12 +179,6 @@ WARL behavior is required, a welcome simplification.)
 * These partitioning registers place no constraints on the order in which
   they're read or written. (This simplifies the hardware design and resulting
   programming model.)
-* `mwid` and `mwidlist`: though it would make sense for the `mwid` WID to be
-  set in `mwidlist`, there is no need to enforce it at the register level, the
-  catastrophic effect of the mis-configuration will take care of itself.
-  (`mwidlist` limits the set of WIDs that the hart may emit transactions for,
-  so M-mode will be unable to emit loads, stores, and instruction fetches if
-  the `mwid` bit of `mwidlist` isn't set.)
 * `mwidseclist`: this bitmask defines the TZ security state (NS) of all the
   WIDs (0 implies "Secure", 1 implies "Non-Secure"). It does not matter which
   WIDs are contained in `mwidlist` nor which WIDs are assigned to `mwid`,
@@ -336,7 +330,8 @@ of this decision logic.
 * If the hart is in VS-mode (i.e. when S-mode and `V=1`) or in any kind of
   U-mode, and if the effective WID is not set in `mwiddeleg`, reject
   transaction.
-* If the effective WID is not set in `mwidlist`, reject transaction.
+* If the hart is not in M-mode and the effective WID is not set in `mwidlist`,
+  reject transaction.
 * If the transaction is accepted, the effective WID is signaled on the outgoing
   transaction.
 
@@ -430,30 +425,19 @@ nor constraints in place.
 The one problem with the "zero method" is that the bitmask registers
 `mwidlist`, `mwiddeleg`, and `hwiddeleg` control which WIDs (at different
 privilege modes) are allowed to issue transactions, and so if those registers
-are zero, no mode will be able to issue an instruction fetch...
+are zero, the affected modes will be unable to issue an instruction fetch...
 
-* If the configuration of partitioning is (or might be) performed by the RISC-V
-  cores, then at the very least `mwidlist` must be set to `0x1`, to allow
-  M-mode to operate.
-* The above will suffice if M-mode can be obliged to initialize WG settings
-  before handing control to S-mode or U-mode. Otherwise, to have a system
-  default that requires no WG initialization, i.e. one that functions in all
-  modes as though WG was not present, then `mwiddeleg` and `hwiddeleg` should
-  also default to `0x1`.
+* If M-mode can be obliged to initialize WG settings before handing control to
+  S-mode or U-mode, then M-mode's use of `mwid` suffices to bootstrap.
+* Otherwise, to have system defaults that require no WG initialization, i.e.
+  that function in all modes as though WG was not present, then `mwiddeleg`
+  and `hwiddeleg` should default to `0x1`.
 
 In <<wgRegisterMap>> below, we will assume the latter situation, such that the
-power-on defaults allow the system to function "as though WG (and TZ) was
+power-on defaults allow the system to function "as though WG and TZ were
 absent". If the implementation context has different requirements (such as an
 obligatory external configuration via RoT), the power-on defaults can be
-adapted, as per the next subsection...
-
-==== External configuration obligatory
-
-In this case, the "zero method" is arguably a security feature. If the power-on
-defaults for all WG registers is zero, external configuration is _necessary_
-before the harts can be released to execute (successfully). As such, the system
-owner is ensured that a RoT must have performed partitioning initialization
-prior to the subsystem being enabled to run.
+adapted.
 
 [[wgRegisterMap]]
 === WorldGuard Register map
@@ -521,6 +505,9 @@ and other instructions with an appropriate FENCE.
 
 Only the lower NWorlds bits of MASK are implemented. The remaining are
 read-only zero.
+
+Note, `mwidlist` restrictions only apply to privilege modes below M-mode. I.e.
+M-mode's use of the `mwid` WID is not constrained by `mwidlist`.
 
 [[mwidseclist]]
 ==== `mwidseclist`: Set of Non-Secure WIDs
