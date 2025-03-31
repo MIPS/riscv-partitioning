@@ -623,18 +623,12 @@ The only register-map modification to ePMP contemplated by this proposal
 concerns the possibility for implementations to record the NS-Attr attribute
 within the ePMP configuration.
 
-The `pmpcfgX` configuration registers are described in the "RISC-V Instruction
-Set Manual Volume II: Privileged Architecture". These are densely packed into
-CSRs and consist of 8 bits each, of which two bits are documented as `0`
-(unused/reserved). It so happens that the NS-Attr attribute is also a 2-bit
-value, of which one value (`10b`) is documented as being unused/reserved. As
-such...
+The NS-Attr attribute is a 2-bit value, of which one value (`10b`) is
+documented as being unused/reserved. As such, this proposal suggests;
 
-This proposal suggests;
-
-* using the two unused bits in the `pmpcfg0`-`pmpcfg63` registers
-  to record NS-Attr,
-* platforms that use an alternative mechanism for determining the NS-Attr of a
-  physical address range should always return `10b`, such that software can
-  detect this behavior.
-
+* the addition of `pmpns0`-`pmpns63` configuration registers, as
+  densely-packed, 2-bit-wide registers for those platforms that use this method
+  to record NS-Attr attributes.
+* for implementations that manage NS-Attr attributes by other means, returning
+  `10b` on reads (and silently dropping writes) would provide a useful
+  runtime-detection mechanism for software.

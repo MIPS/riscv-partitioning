@@ -115,7 +115,7 @@ there is a need to adjust it to support TZ-compatible behavior.
 __Specifically, ePMP will need to be cognizant of the hart's effective security
 state (the NS-Req state of outgoing transactions) in order to prevent a hart in
 the Non-Secure state from accessing a resource marked as Secure. It may also be
-responsible for recording (through `pmpcfgX` register settings) the NS-Attr
+responsible for recording (through `pmpnsX` register settings) the NS-Attr
 state of physical address ranges, depending on how the platform manages such
 attributes.__
 

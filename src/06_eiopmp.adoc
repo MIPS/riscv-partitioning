@@ -142,7 +142,7 @@ eIOPMP assumes its output to consist of;
 
 As was discussed in the ISA chapter, in <<tz>>, implementations must provide a
 means for determining the NS-Attr of physical address ranges. For the ISA, one
-optional solution is to record the NS-Attr field in the `pmpcfgX` registers of
+optional solution is to record the NS-Attr field in the `pmpnsX` registers of
 the ePMP, and there is a means to detect at run-time whether that mechanism is
 being used by the implementation. Similarly for eIOPMP, an implementation may
 choose to record the NS-Attr field in the eIOPMP array entries, on a

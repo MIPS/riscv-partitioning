@@ -43,7 +43,7 @@ be exposed for external control.__
 
 ePMP also contributes to the system partitioning, through the ability to write
 (and lock) rules that govern even M-mode's access to the system's addressable
-resources. On some platforms, the `pmpcfgX` registers may also be the way in
+resources. On some platforms, the `pmpnsX` registers may also be the way in
 which physical address ranges are assigned their NS-Attr TZ attributes. __The
 ePMP registers should be exposed for external control.__
 
