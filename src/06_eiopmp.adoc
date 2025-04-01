@@ -120,9 +120,9 @@ eIOPMP assumes its input to consist of;
   to the `mwidseclist` CSR, see <<mwidseclist>>).
 
 ****
-eIOPMP SHOULD be configurable to allow the NS-Req field to be determined as
-either (a) an input field (alongside the RRID/WID input parameter), or (b) via
-the `widseclist` device register (derived from the RRID/WID input parameter).
+eIOPMP SHOULD be configurable to allow the NS-Req field to be determined either
+(a) as an input field (alongside the RRID/WID input parameter), or (b) via the
+`widseclist` device register (derived from the RRID/WID input parameter).
 ****
 
 As a look-aside model, it does not process any request data (in the case of
