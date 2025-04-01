@@ -86,9 +86,11 @@ This proposal suggests mechanisms by which the ePMP and/or eIOPMP blocks can,
 alternatively, record the NS-Attr attribute for the address ranges that they
 manage.
 
-* For ePMP, the two unused/reserved bits in `pmpcfgX` registers carry the
-  NS-Attr value, and return `10b` if the platform isn't supporting this
-  mechanism. See <<tzAcceptReject>> and <<epmpRegisterMap>> for more detail.
+* For ePMP, the addition of densely-packed, 2-bit `pmpns0`-`pmpns64` registers
+  to record the NS-Attr values for the corresponding PMP entries. Platforms
+  that don't use this mechanism for tracking NS-Attr can return `10b` (an
+  unused/reserved code). See <<tzAcceptReject>> and <<epmpRegisterMap>> for
+  more detail.
 * For eIOPMP, the `HWCFG3.ns_en` register field determines if the platform is
   using the per-entry `ENTRY_CFG(i).ns_attr` field to carry the NS-Attr value.
   See <<nsattr>> for more detail, and <<eiopmphwcfg3>> and <<eiopmpentrycfg>>
