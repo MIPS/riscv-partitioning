@@ -38,8 +38,8 @@ that;
     <<secureWorlds>>.)
 *** Guidance on M-mode switching itself between Secure and Non-Secure. (See
     "Non-Secure harts" below in <<nonSecureHarts>>.)
-** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`, and
-   associated behaviors.
+** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`,
+   `vslwid` and associated behaviors.
 ** Alternative illegal-value semantics for the WG CSRs.
 ** Sane power-on defaults that behave as a system without any partitioning.
 * Some of the WG CSRs be exposed for external control.
@@ -122,9 +122,13 @@ the expected behavior for the `V=0` case, i.e. for `HS` and `HU`.
 
 What remains is to define the expected behavior for the `VS` and `VU` states,
 which we do via the addition of two `HS`-level registers (that are not visible
-to `VS`), called `hlwid` and `hwiddeleg`. These extend the existing WID and
-WID-delegation concepts to the additional level of privilege hierarchy that the
-H extension introduces.
+to `VS`), called `hlwid` and `hwiddeleg`, and a single `VS`-level shadow
+register. These extend the existing WID and WID-delegation concepts to the
+additional level of privilege hierarchy that the H extension introduces.
+
+****
+Ruud: please check the previous paragraph
+****
 
 Note that there is no provision in this extension for the virtualization of
 WIDs. The delegation mechanism with `mwiddeleg` allows M-mode to control the
@@ -146,8 +150,8 @@ image::WG-V1.drawio.svg[]
 The precise behavior of (and interaction between) the CSRs will be described in
 two parts, depending on whether they are the _lockable partitioning registers_
 (`mwid`, `mwidlist`, `mwidseclist`) or the _run-time manipulable registers_
-(`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`). But first a note about
-"illegal values".
+(`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`, `vslwid`). But first a
+note about "illegal values".
 
 ==== Illegal values
 
@@ -187,7 +191,7 @@ WARL behavior is required, a welcome simplification.)
 
 ==== Run-time manipulable registers
 
-`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`
+`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`, `vslwid`
 
 * These are the CSRs that are expected to be modified by M-mode and S-mode at
   run-time, though many use-cases will use static/unchanging values for these
@@ -206,6 +210,7 @@ WARL behavior is required, a welcome simplification.)
   `VU`). It makes sense for the corresponding bits to be set in `mwidlist` and
   `mwiddeleg` (and, in the case of `VU`, `hwiddeleg` also), but there is no
   need to enforce such relationships at the register level.
+* `vslwid`: __Ruud: please fill in here__
 * `mwiddeleg`: this register determines the WIDs that (H)S-mode is allowed to
   assign to U-mode (and, if the Hypervisor extension is enabled, VS-mode), i.e.
   those WIDs that can (or should) be set in `slwid` (and `hlwid`). It makes
@@ -259,9 +264,9 @@ Software/firmware can discover the supported widths by writing a register with
 all ones and reading the value back - the unsupported bits will read back as
 zero.
 
-* If the CSR is a WID-holding register (`mwid`, `mlwid`, `hlwid`, `slwid`), the
-  result will determine the supported WID-width in bits, the range of WIDs will
-  therefore be from 0 to 2^WIDwidth^-1, inclusive.
+* If the CSR is a WID-holding register (`mwid`, `mlwid`, `hlwid`, `slwid`,
+  `vslwid`), the result will determine the supported WID-width in bits, the
+  range of WIDs will therefore be from 0 to 2^WIDwidth^-1, inclusive.
 * If the CSR is a WID-bitmask-holding register (`mwidlist`, `mwiddeleg`,
   `mwidseclist`, `hwiddeleg`), the result will determine the range of WIDs
   itself, and this should be a power of 2.
@@ -291,7 +296,8 @@ The WID of each privilege mode is determined by the following registers;
           M-mode --> mwid
        HS/S-mode --> mlwid
          VS-mode --> hlwid
-    HU/VU/U-mode --> slwid
+       HU/U-mode --> slwid
+         VU-mode --> vslwid
 ....
 
 * The "effective WID" is the WID of the current privilege mode.
@@ -459,6 +465,7 @@ those added by this proposal.
 | `hlwid` | RW for (H)S | ??? | `0x0` | WID for VS-mode
 | `hwiddeleg` | RW for (H)S | ??? | `0x1` | Set of WIDs delegated to VS-mode
 | `slwid` | RW for S | `0x190` | `0x0` | WID for U-mode
+| `vslwid` | RW for M | ??? | `0x0` | __Ruud: what do we call it?__
 |===
 
 The following sections provide more detail on each of these registers.
@@ -616,6 +623,23 @@ read-only zero.
 Writes to `slwid` have the same ordering semantics as writes to the ePMP CSRs
 with respect to when a write to `slwid` takes effect.
 
+==== `vslwid`: __Ruud: what do we call it?__
+
+[%header,cols="1,1,5"]
+|===
+| Name | Bits | Description
+| WID | `[XLEN-1]:0`
+| Ruud: one-sentence description of this WID. Only Ceil(Log~2~(NWorlds)) LSBs
+are used, others are read-only zero.
+|===
+
+****
+Ruud: need to describe any relevant semantics here.
+****
+
+Only Ceil(Log~2~(NWorlds)) bits of WID are implemented. The remaining are
+read-only zero.
+
 [[epmpRegisterMap]]
 === ePMP Register Map
 
@@ -632,3 +656,4 @@ documented as being unused/reserved. As such, this proposal suggests;
 * for implementations that manage NS-Attr attributes by other means, returning
   `10b` on reads (and silently dropping writes) would provide a useful
   runtime-detection mechanism for software.
+
