@@ -40,7 +40,7 @@ that;
     "Non-Secure harts" below in <<nonSecureHarts>>.)
 ** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`, and
    associated behaviors.
-** Alternative illegal-value semantics for the WG CSRs.
+** Alternative illegal-value (and WARL) semantics for the WG CSRs.
 ** Sane power-on defaults that behave as a system without any partitioning.
 * Some of the WG CSRs be exposed for external control.
 
@@ -161,8 +161,8 @@ In this proposal, we opt for different semantics to handle such cases and
 therefore deviate from the WG proposal. Instead of having "illegal values" that
 need to be corrected (in a WARL sense), we allow all registers to assume
 arbitrary values, whereby the so-called "illegal values" simply correspond to
-(mis)configurations that by their nature will fail to operate. (No corrective
-WARL behavior is required, a welcome simplification.)
+(mis)configurations that by their nature will fail to operate. (The only
+corrective WARL behavior required is to limit the number of supported bits.)
 
 ==== Lockable partitioning registers
 
@@ -632,3 +632,4 @@ documented as being unused/reserved. As such, this proposal suggests;
 * for implementations that manage NS-Attr attributes by other means, returning
   `10b` on reads (and silently dropping writes) would provide a useful
   runtime-detection mechanism for software.
+
