@@ -70,4 +70,5 @@ include::03_isa.adoc[]
 include::04_nonisa.adoc[]
 include::05_eiopmp.adoc[]
 include::app1_isa_ext.adoc[]
+include::app2_future.adoc[]
 

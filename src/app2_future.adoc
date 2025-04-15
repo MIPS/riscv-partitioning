@@ -1,0 +1,13 @@
+:imagesdir: ./images
+
+== Appendix: future work
+
+=== Register relocation
+
+It has been suggested that `*wid*` registers could possibly be encoded in
+`mseccfg` and `*envcfg` registers, or some other kind of consolidation to
+reduce the number of registers involved in a context-switch.
+
+TBD: once the register definition settles down, solicit ideas for this and
+judge their cost-benefit.
+
