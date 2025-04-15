@@ -69,4 +69,5 @@ include::02_overview.adoc[]
 include::03_isa.adoc[]
 include::04_nonisa.adoc[]
 include::05_eiopmp.adoc[]
-//include::bibliography.adoc[]
+include::app1_isa_ext.adoc[]
+

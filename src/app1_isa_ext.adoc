@@ -1,0 +1,12 @@
+:imagesdir: ./images
+
+== Appendix: potential ISA extensions
+
+=== NWorlds > XLEN
+
+As previously mentioned, in <<runtimeDiscovery>>, the ISA limits the number of
+supported WIDs to `XLEN`, due to the use of `XLEN`-length registers to hold WID
+bitmasks.
+
+TBD: explain the contours of how this would work...
+

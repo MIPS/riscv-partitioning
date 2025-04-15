@@ -232,6 +232,7 @@ need to be conveyed to it through software mechanisms.
   (as HS-mode can not successfully delegate WIDs that were not delegated to
   it).
 
+[[runtimeDiscovery]]
 ==== Run-time discovery
 
 From the ISA perspective, WID is simply an ID, it does not directly refer to
