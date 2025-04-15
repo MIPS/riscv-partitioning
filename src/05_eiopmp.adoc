@@ -53,6 +53,7 @@ wrappers.
 
 === Modifications to IOPMP
 
+[[rridWid]]
 ==== RRID == WID
 
 First observation is that the IOPMP definition conjures into existence a new
@@ -226,7 +227,7 @@ available set of IOPMP entries into priority entries and non-priority entries.
 When the checker performs a lookup on the IOPMP entry array for a given address
 range, the IOPMP guarantees to correctly match on the first corresponding
 priority entry, and only that entry, if any such match exists. That defines
-what happens if more than one priority entry match against the address range;
+what happens if more than one priority entry matches against the address range;
 the lowest-index match wins out. That entry specifies the permitted access
 modes that will then be applied. (E.g. two different priority entries may
 specify different access modes, so it matters which of the entries is matched.)

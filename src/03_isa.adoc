@@ -28,11 +28,16 @@ that;
    be obtained that provide behavior functionally equivalent to WG being
    disabled.
 * The publicly-available WG definition is modified;
-** For improvement of WG, addition of `mwid` and `mwidlist` CSRs and their
-   respective behaviors.footnote:[There is a second publicly-available WG
-   document that suggests the existence of these two additional CSRs, but it
-   does not specify any detail so we are treating our definition as a
-   modification.]
+** For improvement of WG;
+*** Addition of `mwid` and `mwidlist` CSRs and their respective
+    behaviors.footnote:[There is a second publicly-available WG document that
+    suggests the existence of these two additional CSRs, but it does not
+    specify any detail so we are treating our definition as a modification.]
+*** World ID (or `WID`) registers are reduced to a theoretical maximum of 16
+    bits, for consistency with IOPMP's `RRID` and to leave register space for
+    future extensions.
+*** Alternative illegal-value (and WARL) semantics for the WG CSRs.
+** Sane power-on defaults that behave as a system without any partitioning.
 ** For TZ behavior;
 *** Addition of `mwidseclist` and its behavior. (See "Secure worlds" below in
     <<secureWorlds>>.)
@@ -40,8 +45,6 @@ that;
     "Non-Secure harts" below in <<nonSecureHarts>>.)
 ** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`, and
    associated behaviors.
-** Alternative illegal-value (and WARL) semantics for the WG CSRs.
-** Sane power-on defaults that behave as a system without any partitioning.
 * Some of the WG CSRs be exposed for external control.
 
 [[tz]]
@@ -249,11 +252,17 @@ of outgoing transactions.
 The ISA inherently limits the number of supported WIDs ("NWorlds" in WG terms)
 to `XLEN`,footnote:[whether `XLEN` is 32, 64, or 128 depends on the RISC-V
 hardware configuration] as there are XLEN-bit registers that serve as WID
-bitmasks (`mwidlist`, `mwiddeleg`, `mwidseclist`, `hwiddeleg`)footnote:[the
-architecture could be extended by using multi-register bitmasks, but the
-marginal value of doing so is expected to be low.]. However, the actual
-ISA-supported range of WIDs may be a smaller power of 2. (It may even be just
-2.)
+bitmasks (`mwidlist`, `mwiddeleg`, `mwidseclist`, `hwiddeleg`). However, an
+extension will likely be proposed to extend the WID bitmasks, in which case
+this limit may be overcome.
+
+The ISA has another inherent upper limit (to the number of supported WIDs) of
+2^16^, due to WID register fields being 16-bit wide.footnote:[Using a 16-bit
+width for WID values is chosen to align with the IOPMP's use of 16-bit RRIDs.
+See <<rridWid>> for more information.]
+
+However, the actual ISA-supported range of WIDs is likely to be a considerably
+smaller power of 2. (It may even be just 2.)
 
 Software/firmware can discover the supported widths by writing a register with
 all ones and reading the value back - the unsupported bits will read back as
@@ -470,7 +479,8 @@ The following sections provide more detail on each of these registers.
 | Name | Bits | Description
 | L | `XLEN-1`
 | Lock bit. Write 1 to lock register (as read-only) until next reset
-| WID | `[XLEN-2]:0`
+| rsv | `[XLEN-2]:16` | Reserved, wired to zero.
+| WID | `15:0`
 | WID that M-mode operates in. Writable only up until L has been written 1.
 Only Ceil(Log~2~(NWorlds)) LSBs are writable, others are read-only zero.
 |===
@@ -538,7 +548,8 @@ in `mwidseclist` is 0, or "Non-Secure" if its corresponding bit is 1.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| WID | `[XLEN-1]:0`
+| rsv | `[XLEN-1]:16` | Reserved, wired to zero.
+| WID | `15:0`
 | WID that (H)S-mode operates in. Only Ceil(Log~2~(NWorlds)) LSBs are used,
 others are read-only zero.
 |===
@@ -570,7 +581,8 @@ read-only zero.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| WID | `[XLEN-1]:0`
+| rsv | `[XLEN-1]:16` | Reserved, wired to zero.
+| WID | `15:0`
 | WID that VS-mode operates in. Only Ceil(Log~2~(NWorlds)) LSBs are used,
 others are read-only zero.
 |===
@@ -603,7 +615,8 @@ read-only zero.
 [%header,cols="1,1,5"]
 |===
 | Name | Bits | Description
-| WID | `[XLEN-1]:0`
+| rsv | `[XLEN-1]:16` | Reserved, wired to zero.
+| WID | `15:0`
 | WID that U-mode operates in. Only Ceil(Log~2~(NWorlds)) LSBs are used, others
 are read-only zero.
 |===
