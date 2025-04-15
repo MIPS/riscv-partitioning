@@ -149,8 +149,8 @@ image::WG-V1.drawio.svg[]
 The precise behavior of (and interaction between) the CSRs will be described in
 two parts, depending on whether they are the _lockable partitioning registers_
 (`mwid`, `mwidlist`, `mwidseclist`) or the _run-time manipulable registers_
-(`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`). But first a note about
-"illegal values".
+(`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`). They are in sections
+<<lockablePartitioning>> and <<runtimeManipulable>>, respectively.
 
 ==== Illegal values
 
@@ -167,6 +167,16 @@ arbitrary values, whereby the so-called "illegal values" simply correspond to
 (mis)configurations that by their nature will fail to operate. (The only
 corrective WARL behavior required is to limit the number of supported bits.)
 
+==== Register visibility
+
+This proposal takes a minimalist approach to register visibility. Specifically,
+WG registers are only visible to privilege levels that have writable control
+over them. If a software context needs to know any WID or WID-bitmask values
+that it does not have control over (e.g. S-mode software wanting to know
+`mwiddeleg`, which indicates the set of WIDs delegated to it), then that will
+need to be conveyed to it through software mechanisms.
+
+[[lockablePartitioning]]
 ==== Lockable partitioning registers
 
 `mwid`, `mwidlist`, `mwidseclist`
@@ -188,6 +198,7 @@ corrective WARL behavior required is to limit the number of supported bits.)
   `mlwid`, and `slwid` - the `mwidseclist` CSR can be modified arbitrarily up
   until the "L"ock bit is set in `mwid`.
 
+[[runtimeManipulable]]
 ==== Run-time manipulable registers
 
 `mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`
