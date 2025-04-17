@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **_NOTE:_** PROJECTS BUILT USING THE TEMPLATE SHOULD UPDATE THE BELOW SECTIONS AS-NEEDED.
 
-### [0.6.3] - 2025-04-01
+## [0.6.4] - 2025-04-17
+- Reusable build system (used by sPMP too)
+- Move chapter 3 (external config) into chapter 2 (arch)
+- 16-bit maximum for WIDs
+- Add "register visibility"
+- Add stub appendices
+- Remove MIPS logo and copyright
+
+## [0.6.3] - 2025-04-01
 - Fix: mwid is no longer constrained by mwidlist.
 - Update optional ePMP tracking of NS-Attr.
 - Retouches.
