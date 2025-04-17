@@ -43,8 +43,8 @@ that;
     <<secureWorlds>>.)
 *** Guidance on M-mode switching itself between Secure and Non-Secure. (See
     "Non-Secure harts" below in <<nonSecureHarts>>.)
-** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`, and
-   associated behaviors.
+** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`,
+   `vslwid` and associated behaviors.
 * Some of the WG CSRs be exposed for external control.
 
 [[tz]]
@@ -125,16 +125,9 @@ the expected behavior for the `V=0` case, i.e. for `HS` and `HU`.
 
 What remains is to define the expected behavior for the `VS` and `VU` states,
 which we do via the addition of two `HS`-level registers (that are not visible
-to `VS`), called `hlwid` and `hwiddeleg`. These extend the existing WID and
-WID-delegation concepts to the additional level of privilege hierarchy that the
-H extension introduces.
-
-Note that there is no provision in this extension for the virtualization of
-WIDs. The delegation mechanism with `mwiddeleg` allows M-mode to control the
-WIDs that (H)S-mode can use and assign to lower levels (and within that,
-`hwiddeleg` allows HS-mode to control the WIDs that VS-mode has to work with),
-but that only limits the set of WIDs that can be used, it does not change their
-enumeration.
+to `VS`), called `hlwid` and `hwiddeleg`, and a single `VS`-level shadow
+register called `vslwid`. These extend the existing WID and WID-delegation concepts to the
+additional level of privilege hierarchy that the H extension introduces.
 
 The following diagram extends the previous one to illustrate the WorldGuard
 decision tree when the Hypervisor extension is enabled;
@@ -149,8 +142,8 @@ image::WG-V1.drawio.svg[]
 The precise behavior of (and interaction between) the CSRs will be described in
 two parts, depending on whether they are the _lockable partitioning registers_
 (`mwid`, `mwidlist`, `mwidseclist`) or the _run-time manipulable registers_
-(`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`). They are in sections
-<<lockablePartitioning>> and <<runtimeManipulable>>, respectively.
+(`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`, `vslwid`). They are in
+sections <<lockablePartitioning>> and <<runtimeManipulable>>, respectively.
 
 ==== Illegal values
 
@@ -201,7 +194,7 @@ need to be conveyed to it through software mechanisms.
 [[runtimeManipulable]]
 ==== Run-time manipulable registers
 
-`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`
+`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`, `vslwid`
 
 * These are the CSRs that are expected to be modified by M-mode and S-mode at
   run-time, though many use-cases will use static/unchanging values for these
@@ -216,10 +209,14 @@ need to be conveyed to it through software mechanisms.
 * `hlwid`: this register determines the effective WID of VS-mode. It makes sense
   for the corresponding bits in `mwidlist` and `mwiddeleg` to be set, but there
   is no need to enforce such a relationship at the register level.
-* `slwid`: this register determines the effective WID of U-mode (both `HU` and
-  `VU`). It makes sense for the corresponding bits to be set in `mwidlist` and
-  `mwiddeleg` (and, in the case of `VU`, `hwiddeleg` also), but there is no
-  need to enforce such relationships at the register level.
+* `slwid`: this register determines the effective WID of U-mode. It makes sense
+  for the corresponding bits to be set in `mwidlist` and `mwiddeleg`, but there
+  is no need to enforce such relationships at the register level.
+* `vslwid`: This CSR is the virtualization shadow register of the slwid
+   register. In HS-mode this register can be programmed to set the effective WID
+   of VU mode. It makes sense for the corresponding bits in `hwiddeleg` to be
+   set, but there is no need to enforce such a relationship at the register
+   level.
 * `mwiddeleg`: this register determines the WIDs that (H)S-mode is allowed to
   assign to U-mode (and, if the Hypervisor extension is enabled, VS-mode), i.e.
   those WIDs that can (or should) be set in `slwid` (and `hlwid`). It makes
@@ -227,7 +224,7 @@ need to be conveyed to it through software mechanisms.
   in `mwidlist` can be expected to work), but there is no need to enforce this
   at the register level.
 * `hwiddeleg`: this register determines the WIDs that VS-mode is allowed to
-  assign to VU-mode, ie. those WIDs that can (or should) be set in `slwid` when
+  assign to VU-mode, ie. those WIDs that can (or should) be set in `vslwid` when
   `V=1`. It makes sense for `hwiddeleg` to be a strict subset of `mwiddeleg`
   (as HS-mode can not successfully delegate WIDs that were not delegated to
   it).
@@ -280,9 +277,9 @@ Software/firmware can discover the supported widths by writing a register with
 all ones and reading the value back - the unsupported bits will read back as
 zero.
 
-* If the CSR is a WID-holding register (`mwid`, `mlwid`, `hlwid`, `slwid`), the
-  result will determine the supported WID-width in bits, the range of WIDs will
-  therefore be from 0 to 2^WIDwidth^-1, inclusive.
+* If the CSR is a WID-holding register (`mwid`, `mlwid`, `hlwid`, `slwid`,
+  `vslwid`), the result will determine the supported WID-width in bits, the
+  range of WIDs will therefore be from 0 to 2^WIDwidth^-1, inclusive.
 * If the CSR is a WID-bitmask-holding register (`mwidlist`, `mwiddeleg`,
   `mwidseclist`, `hwiddeleg`), the result will determine the range of WIDs
   itself, and this should be a power of 2.
@@ -312,7 +309,8 @@ The WID of each privilege mode is determined by the following registers;
           M-mode --> mwid
        HS/S-mode --> mlwid
          VS-mode --> hlwid
-    HU/VU/U-mode --> slwid
+       HU/U-mode --> slwid
+         VU-mode --> vslwid
 ....
 
 * The "effective WID" is the WID of the current privilege mode.
@@ -480,6 +478,7 @@ those added by this proposal.
 | `hlwid` | RW for (H)S | ??? | `0x0` | WID for VS-mode
 | `hwiddeleg` | RW for (H)S | ??? | `0x1` | Set of WIDs delegated to VS-mode
 | `slwid` | RW for S | `0x190` | `0x0` | WID for U-mode
+| `vslwid` | RW for M | ??? | `0x0` | Virtual Supervisor mode Lower World Identifier
 |===
 
 The following sections provide more detail on each of these registers.
@@ -640,6 +639,21 @@ read-only zero.
 
 Writes to `slwid` have the same ordering semantics as writes to the ePMP CSRs
 with respect to when a write to `slwid` takes effect.
+
+==== `vslwid`: Virtual Supervisor mode Lower World Identifier
+
+[%header,cols="1,1,5"]
+|===
+| Name | Bits | Description
+| WID | `[XLEN-1]:0`
+| This is the WID used in Virtual User mode when delegation is enabled. Only Ceil(Log~2~(NWorlds)) LSBs
+are used, others are read-only zero.
+|===
+
+This CSR is the virtualization shadow register of the slwid register. In hypervisor extended S mode this register can be programmed to set the value to be used in virtual mode.
+
+Only Ceil(Log~2~(NWorlds)) bits of WID are implemented. The remaining are
+read-only zero.
 
 [[epmpRegisterMap]]
 === ePMP Register Map
