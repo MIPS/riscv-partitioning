@@ -1,9 +1,9 @@
-= Secure system partitioning with RISC-V WorldGuard and ARM(R) TrustZone(R)
+= Secure system partitioning with RISC-V Worlds and Security Levels
 :docgroup: RISC-V Task Group
-:description: :description: Secure system partitioning with WorldGuard and ARM(R) TrustZone(R)
+:description: :description: Secure system partitioning with RISC-V Worlds and Security Levels
 :company: RISC-V.org
 :revdate: 4/2025
-:revnumber: 0.6.5-dev
+:revnumber: 0.7.0-dev
 :revremark: This document is under development. Expect changes.
 :revinfo:
 :url-riscv: http://riscv.org
@@ -39,7 +39,7 @@ endif::[]
 :footnote:
 :xrefstyle: short
 
-= Secure system partitioning with WorldGuard and ARM(R) TrustZone(R)
+= Secure system partitioning with RISC-V Worlds and Security Levels
 Non-existant Task Group
 
 // Preamble
@@ -66,9 +66,103 @@ include::00_glossary.adoc[]
 include::01_intro.adoc[]
 //include::notation.adoc[]
 include::02_overview.adoc[]
-include::03_isa.adoc[]
-include::04_nonisa.adoc[]
-include::05_eiopmp.adoc[]
+
+= "Worlds" baseline
+
+This section of the proposal concerns the baseline definitions for "Worlds",
+system-level resource domains. Each World is identified by a World ID, or
+"WID", which is tagged onto all load, store, and fetch transactions issued by
+initiators belonging to that world.
+
+In the case of hart-issued transactions, each privilege level is associated
+with a World ID, which is used to tag all transactions issued by the
+instructions executing at that privilege level.
+
+This section of the document covers;
+
+* <<isa>>, the "World-ID" ISA extension set. This is derived from the original
+  WorldGuard v0.4 proposal from SiFive and by making some tweaks and adding
+  support for the Hypervisor extension. It provides support for World-based
+  marking of core-initiated transactions.
+* <<eiopmp>>, the "eIOPMP extension". This is derived from the v0.7 of the
+  draft IOPMP specification by making some tweaks and clarifications, as well
+  as adding support for match-based output WID/RRID. I.e. an eIOPMP that can
+  map from an input WID namespace to an output WID namespace.
+
+include::03_worlds_isa.adoc[]
+include::04_worlds_nonisa.adoc[]
+
+= "Security Levels"
+
+This section of the proposal concerns the "Security Level" concept, which is a
+generalization of the boolean Secure/Non-Secure concept (or "the NS bit") of
+TrustZone(R). It allows the otherwise symmetric concept of a World to be
+qualified according to its degree of security criticality, creating an
+asymmetric relationship between Worlds of different Security Level.
+
+This section of the document covers;
+
+* <<slISA>>, the "Security Levels" ISA extension set. This defines the
+  `mwidseclist` CSR and associated behavior, and provides the functionality
+  that enforces sane relationships between the Security Levels of the hart's 3
+  privilege levels.
+* <<slNonISA>>, the "eIOPMP Security Levels" non-ISA extension. This is to the
+  eIOPMP what the "Security Levels" ISA extension is to the hart, allowing
+  each World ID to be associated with a corresponding Security Level.
+
+include::05_sl_isa.adoc[]
+include::06_sl_nonisa.adoc[]
+
+= "Security Qualifiers"
+
+This section of the proposal concerns the "Security Qualifier" concept, an
+attribute that can be associated with target addresses and that can be compared
+against a transaction to provide Security Level-based access control. (This is
+a generalization of the "NS-Attr" concept found in TrustZone(R).)
+
+This section of the document covers;
+
+* <<sqISA>>, the "Security Qualifiers" ISA extension. This defines the memory
+  attribute type that can be used to provide access-control to contexts that
+  are represented by a Security Level. The extension provides the functionality
+  that causes a hart (probably through "ePMP") to implement access control
+  based on Security Level and Security Qualifiers.
+* <<sqNonISA>>, the "eIOPMP Security Qualifiers" non-ISA extension. This is to
+  the eIOPMP what the "Security Qualifiers" ISA extension is to the hart,
+  implementing access control based on Security Level and Security Qualifiers.
+
+include::07_sq_isa.adoc[]
+include::08_sq_nonisa.adoc[]
+
+= PMP registration of Security Qualifiers
+
+This section of the proposal concerns an optional way for implementations to
+perform the task of associating Security Qualifiers with all accessible address
+ranges.
+
+As defined up to this point, Security Qualifiers, like PMAs (Physical Memory
+Attributes), are managed in an implementation-defined manner. Indeed, they may
+be implemented as a PMA type. Given that harts have ePMP and devices have
+eIOPMP to provide for physical address-based checking of transactions, this
+extension specifies the way in which the ePMP and eIOPMP entries can be
+leveraged to record the Security Qualifiers themselves.
+
+This section of the document covers;
+
+* <<sqepmpISA>>, the "ePMP Security Qualifiers" ISA extension. This defines the
+  `pmpsecX` registers that allow ePMP to record, on a per-entry basis, the
+  Security Qualifiers for the corresponding address ranges.
+* <<sqeiopmpNonISA>>, the "eIOPMP Security Qualifiers" non-ISA extension. This
+  is to the eIOPMP what the "ePMP Security Qualifiers" extension is to the
+  ePMP, whereby per-IOPMP-entry recording of Security Qualifiers is supported.
+
+include::09_sqp_isa.adoc[]
+include::10_sqp_nonisa.adoc[]
+
+include::nonisa.adoc[]
+
+= Appendices
+
 include::app1_isa_ext.adoc[]
 include::app2_future.adoc[]
 

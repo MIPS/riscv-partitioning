@@ -5,101 +5,121 @@
 
 === Reconciling technologies
 
-This document attempts to architecturally reconcile 3 complementary but
-independent partitioning models:
+This document attempts to present (and demonstate how to reconcile) the
+following complementary partitioning concepts:
 
-* WorldGuard, hereafter "WG"
-* TrustZone(R), hereafter "TZ"
+* Worlds, a new concept that owes its heritage to the WorldGuard definition
+  released by SiFive.
+* Security Levels and Security Qualifiers, new concepts that generalize the
+  "Secure/Non-Secure" model popularized by TEEs (Trusted Execution
+  Environments) and implemented by ARM(R) TrustZone(R).
 * Physical Memory Protection, hereafter "PMP";
 ** "ePMP" for processor-initiated transactions
 ** "IOPMP" for device-initiated transactions
 
-TZ is a security technology developed by ARM(R) for their processor families
-that creates an asymmetric division of a system into two isolated resource
-domains, one "Secure" and the other "Non-Secure".
+TrustZone(R) is a security technology developed by ARM(R) for their processor
+families that creates an asymmetric division of a system into two isolated
+resource domains, one "Secure" and the other "Non-Secure". This can be thought of as
+a composition of two functionalities;
 
-WG (unlike TZ) is a RISC-V-native solution for system partitioning, it allows
-one to create two or more isolated resource domains (up to some
-implementation-specific limit) and it provides ISA extensions that fit
-naturally into the RISC-V programming model.
+* A symmetric isolation capability for two worlds.
+* An asymmetric assignment of security levels ("Secure" and "Non-Secure") to
+  those two worlds, and the behavioral distinctions between those two security
+  levels.
 
-There are multiple reasons to want to achieve such a reconciliation, among them;
+"Worlds" is a generalization of the symmetric isolation concept (from two to
+`NWorlds` worlds), and "Security Levels" is a generalization of the asymmetric
+security level concept (from two to `NLevels` security levels).
 
-* WorldGuard is by far the more natural ISA choice for RISC-V harts, and the
-  more flexible option for RISC-V-based systems as a whole.
-* TZ is a natural fit for Trusted Execution Environment (TEE)-style solutions,
-  and has been underpinning such solutions for many years.
+There are multiple reasons to want to harmonize these partitioning concepts,
+among them;
+
+* Worlds, Security Levels and Security Qualifiers conveniently degenerate to a
+  model that is isomorphic with ARM(R) TrustZone(R) (when `NWorlds` and
+  `NLevels` are 2), allowing for interoperation and integration with
+  TrustZone(R)-centric technology.
+* The `NWorlds==NLevels==2` model has been underpinning Trusted Execution
+  Environment (TEE)-style solutions for many years, so this facilitates the
+  porting of TEE solutions to RISC-V, and opens up avenues for more stratified
+  (and less binary) models in the future.
 * There is industry demand to be able to create RISC-V/ARM(R) hybrid solutions,
-  e.g. by embedding RISC-V cores into ARM(R)/TZ-centric SoCs (and vice versa).
-  In terms of interoperability, one cannot teach TZ-based cores to "speak WG",
-  but one _can_ teach WG-based cores to "speak TZ".
-* Each of the technologies presents its own valuable properties in terms of
-  programming model(s), and those properties should ideally be additive.
+  e.g. by embedding RISC-V cores into ARM(R)/TrustZone(R)-centric SoCs (and
+  vice versa).
 
 The following subsections provide background information about each of these
 technologies and hint at how they will be adapted to work together.
-
-=== WorldGuard
-
-WG is a RISC-V-native approach to system-partitioning. It tags bus transactions
-with a "World ID" (hereafter "WID") that can be checked and interpreted at (or
-on route to) the transaction's target, giving rise to the concept of software
-and other transaction-emitting resources being separated into "worlds" that
-have distinct levels of access to addressable resources within the system.
-Initiators implement "marker" functionality to control the tagging of outgoing
-transactions with appropriate WID values, and bus gaskets and target devices
-implement "checker" functionality to perform WID-aware processing.
-
-WG does not define any specific concept for "Secure" or "Non-Secure"
-partitions. Its assumption is that the Worlds concept is used to obtain the
-desired partitioning arrangement, which may include having a world (or worlds)
-dedicated to running only secure (e.g. TCB) workloads and only giving those
-worlds access to security-critical resources. I.e. the system integrator can
-determine whether they would consider a given world as "secure" or otherwise,
-because the current, publicly-available WG specification does not impose the
-concept. __We will clarify and augment the WG definition to harmonize it with
-TZ, which among other things will provide it with the TZ-interoperable concept
-of "Secure"-vs-"Non-Secure" worlds.__
-
-The documented WG ISA uses per-hart CSR registers, including the control that
-locks M-mode limitations into place until the next reset. These would typically
-be initialized as part of a secure-boot process and so may be driven by an
-external processing element (such as a discrete HSM block). __We will clarify
-how the augmented WG definition should be exposed for external configuration.__
-
-The publicly-available WG specification does not include adaptations for the
-Hypervisor extension. __We will augment the WG definition to support the
-Hypervisor extension.__
-
-The WG specification leaves as "implementation-dependent" the detail around how
-`mwid` and `mwidlist` are initialized. __We will document options for
-the power-on defaults of WG registers.__
 
 === TrustZone(R)
 
 AMBA protocols define a boolean security attribute (`AxPROT[1]` in AXI) that
 can be checked and interpreted at (or on route to) the transaction's target,
-giving rise to the TZ concept of "Secure" (versus "Non-Secure") partitions. TZ
-documentation refers to these two partitions as "worlds", but we avoid doing so
-to avoid confusion with the WorldGuard concept of the same name.
+giving rise to the concept of "Secure" (versus "Non-Secure") transactions. This
+is sometimes called the "NS bit".
 
 ARMv8-M uses the term "NS-Req" to refer to the TZ security level of a request,
 and "NS-Attr" to refer to the TZ security attribute of an addressable resource
-that an NS-Req can be compared against. This document uses NS-Req and NS-Attr
-in the same manner, and NS to generically refer to both.
+that an NS-Req can be compared against. As will be seen, NS-Req and NS-Attr
+correspond to our (more generalized) concepts of Security Levels and Security
+Qualifiers, respectively.
 
-Whereas the WG model assumes that transaction sources are markers but not
-checkers,footnote:[This is justified by the fact that, if source-side checking
-is required in a RISC-V and WG based system, ePMP/IOPMP can provide that
-functionality.] TZ assumes that the initiator performs some source-side
-checking before allowing a transaction to be emitted and tagged with the
-current NS state. As such, in order to support TZ-style source-checking, a
-means is required for determining the NS-Attr(s) of a given physical address
-range. This might be achieved by the addition of an "NS-Attr" PMA (Physical
-Memory Attribute) or through some other implementation-specific mechanism. __We
-will propose an optional "NS-Attr" field in the PMP configuration CSRs that can
-be used on platforms that prefer to have the NS-Attr attribute be recorded for
-each physical address range in the ePMP configuration.__
+=== Worlds
+
+Worlds is a RISC-V-native approach to system-partitioning, in which initiators
+implement "marker" functionality to control the tagging of outgoing
+transactions with appropriate "World ID" (hereafter "WID") values, and bus
+gaskets and target devices implement "checker" functionality to perform
+WID-aware processing at (or on route to) the transaction's target.
+
+This gives rise to the concept of software and other transaction-emitting
+resources being separated into "Worlds" that have distinct levels of access to
+addressable resources within the system.
+
+"Worlds" does not innately have any specific concept for "Secure" or
+"Non-Secure" transactions or partitions. The assumption is that the Worlds
+concept is used to obtain a desired partitioning arrangement, without
+consideration to which worlds' workloads are more (or less) "secure" than any
+others.
+
+The World-ID ISA uses per-hart CSR registers, including the control that locks
+M-mode limitations into place until the next reset. These would typically be
+initialized as part of a secure-boot process and so may be driven by an
+external processing element (such as a discrete HSM block). __We will clarify
+how the Worlds definition should be exposed for external configuration.__
+
+The ISA implementation has a corresponding, and software-discoverable,
+`NWorlds` configuration constant, representing the maximum number of distinct
+Worlds supported by the ISA functionality.
+
+=== Security Levels
+
+Security Levels (hereafter "SL") is a scale that the system can assign to
+Worlds in order to define a security stratification (of up to `NLevels`). The
+TrustZone(R) model is equivalent to the `NLevels==2` case.
+
+There is an extension for the hart to enforce/police the expected SL
+relationships between the hart's privilege levels. This ensures that the SL for
+S-mode is never superior to the SL for M-mode, that U-mode is never superior to
+S-mode, etc.
+
+Note that, even if `NLevels` is greater than two, one could interoperate with a
+TrustZone(R)-enabled interconnect by identifying `SL==0` with "Secure", and
+`SL!=0` with "Non-Secure", and signaling the "NS bit" accordingly.
+
+=== Security Qualifiers
+
+A Security Qualifier (hereafter "SQ") consists of a pair of SL values and
+represents the access-control information for a given resource (physical
+address range). The first of the two values indicates the lowest SL that is
+permitted access to the resource, and the latter value indicates the SL that
+the transaction should be tagged with if accepted. (The latter value is
+necessarily equal or inferior to the former, to inhibit privilege-escalation.)
+
+One subtlety to note about SQs is with respect to instruction fetching and, if
+an MMU is present, page-table fetches. A workload shouldn't fetch instructions
+(nor should it load page-tables) from an address range that is accessible to
+inferior SLs, to close the obvious attack vectors that can result. So the
+normal "greater than or equal" comparison between SL (the hart) and SQ (the
+resource) will be an equality comparison for those classes of transactions.
 
 === ePMP
 
@@ -110,39 +130,38 @@ attempted access type. As with the other partitioning mechanisms, it naturally
 lends itself to having "lockable" configuration, to constrain M-mode access in
 a way that it can't subsequently reconfigure (without a reset).
 
-As described previously, there is no need to adjust ePMP for WG behavior, but
-there is a need to adjust it to support TZ-compatible behavior.
-__Specifically, ePMP will need to be cognizant of the hart's effective security
-state (the NS-Req state of outgoing transactions) in order to prevent a hart in
-the Non-Secure state from accessing a resource marked as Secure. It may also be
-responsible for recording (through `pmpnsX` register settings) the NS-Attr
-state of physical address ranges, depending on how the platform manages such
-attributes.__
+There is no need to adjust ePMP for WID isolation behavior, but there is a need
+to enhance it to support SQ-enforcement behavior.  __Specifically, ePMP will
+need to be cognizant of the hart's effective security level (the SL of outgoing
+transactions) in order to prevent the hart from accessing a resource whose SQ
+is restricted to superior SLs. ePMP may also be responsible for recording
+(through `pmpsqX` register settings) the SQ of physical address ranges,
+depending on how the platform manages such attributes.__
 
 === IOPMP
 
-The publicly-defined IOPMP block is independent of the WG and TZ concepts. It
-specifies a prototypical "checker" (with minimal "marker" functionality also)
-for use with device initiators. This configurable block is a form of firewall
-and is proposed primarily for the purpose of providing source-side transaction
-checking for a device, akin to the source-side checking provided by ePMP for
-core-initiated transactions. The IOPMP definition also suggests that IOPMP
-might be used target-side, but leaves as "implementation-dependent" the manner
-in which an input RRID would be provided in that case. In any case, IOPMP is
-neither WG-aware nor TZ-aware.
+The publicly-defined IOPMP block is independent of the WID, SL, and SQ (and
+TrustZone(R)) concepts. It specifies a prototypical "checker" (with minimal
+"marker" functionality also) for use with device initiators. This configurable
+block is a form of firewall and is proposed primarily for the purpose of
+providing source-side transaction checking for a device, akin to the
+source-side checking provided by ePMP for core-initiated transactions. The
+IOPMP definition also suggests that IOPMP might be used target-side, but leaves
+as "implementation-dependent" the manner in which an input RRID would be
+provided in that case.
 
-To make use of WG (at all) and/or TZ (outside the hart), there must be
-WID-aware and/or NS-aware targets and/or routers within the interconnect,
+To make use of WID (at all) and/or SL (outside the hart), there must be
+WID-aware (and/or SL-aware) targets and/or routers within the interconnect,
 otherwise there is little point to tagging transactions with either concept.
-__We achieve this by making a small series of improvements to IOPMP, to
-"WorldGuardify" and "TrustZonify" it.__ The resulting "enhanced IOPMP"
-(hereafter "eIOPMP") can be instantiated as a target-side or routing firewall.
+__We achieve this by making a small series of improvements to IOPMP.__ The
+resulting "enhanced IOPMP" (hereafter "eIOPMP") can be instantiated as a
+target-side or routing firewall.
 
 Note also that, as with ePMP, there is the implementation-specific decision of
-how the NS-Attr attributes are maintained for the physical address space, so
-that the eIOPMP can compare the NS-Req state of the request(er) against the
-target range. __We provide an optional mechanism for recording the NS-Attr
-attributes of physical address ranges within the eIOPMP configuration.__
+how the SQ attributes are maintained for the physical address space, so that
+the eIOPMP can compare the SL of the request(er) against the target range. __We
+provide an optional mechanism for recording the SQ attributes of physical
+address ranges within the ePMP/eIOPMP configuration.__
 
 [[extconfig]]
 === External configuration
@@ -174,11 +193,10 @@ In all such cases we assume:
    configured, these configuration registers may always be read-only to the
    harts.
 
-==== WorldGuard
+==== World-ID
 
-As we will see later, the WorldGuard registers (augmented by this
-specification) divide logically into two groups, _"Lockable partitioning
-registers"_, and _"Run-time manipulable registers"_.
+As we will see later, the World-ID registers divide logically into two groups,
+_"Lockable partitioning registers"_, and _"Run-time manipulable registers"_.
 
 __It is the former, the so-called lockable partitioning registers, that should
 be exposed for external control.__
@@ -186,10 +204,10 @@ be exposed for external control.__
 ==== ePMP
 
 ePMP also contributes to the system partitioning, through the ability to write
-(and lock) rules that govern even M-mode's access to the system's addressable
-resources. On some platforms, the `pmpnsX` registers may also be the way in
-which physical address ranges are assigned their NS-Attr TZ attributes. __The
-ePMP registers should be exposed for external control.__
+(and lock) rules that govern even M-mode's access to the hart's addressable
+resources. On some platforms, the `pmpsqX` registers may also be the way in
+which physical address ranges are assigned their SQ attributes. __The ePMP
+registers should be exposed for external control.__
 
 ==== eIOPMP
 
@@ -202,12 +220,12 @@ integrated into an IOMMU, DMA engine, memory controller, ...]. It is an
 integration-level decision where an eIOPMP instance's registers appear and how
 they are exposed.
 
-As with the ePMP, the eIOPMP may also be responsible for recording the NS-Attr
-TZ attribute for the physical address ranges it covers, this depends on how the
+As with the ePMP, the eIOPMP may also be responsible for recording the SQ
+attributes for the physical address ranges it covers, this depends on how the
 platform chooses to implement these attributes. (They may alternatively be
 tracked by the platform's PMAs, i.e. Physical Memory Attributes, in which case
 the eIOPMP may instead obtain the information that way.) __The eIOPMP may be
-responsible for recording the NS-Attr state of the physical address ranges it
+responsible for recording the SQ attributes of the physical address ranges it
 covers.__
 
 Though some of the IOPMP register settings advertise their own locking
@@ -218,4 +236,55 @@ whole (with the exception of the "Error capture registers").__
 
 __The whole eIOPMP configuration interface should be exposed for external
 control.__
+
+=== Extensions and documentation grouping
+
+In keeping with RVI convention, functionality is introduced in small units
+known as extensions, often at a fine-grain granularity. The assumption is that
+these extensions will typically be employed in coarser-grained groupings, and
+that profiles may be defined to this effect also.
+
+This document will divide itself into coarse-grain "sub-proposal" sections,
+such that each can provide its own context, requirements, and solutions in as
+separable a manner as possible.
+
+* "Worlds" baseline
+** The "World-ID" ISA extension set. This is derived from the original
+   WorldGuard v0.4 proposal from SiFive by making some tweaks and adding
+   support for the Hypervisor extension. It provides support for World-based
+   marking of core-initiated transactions.
+** The "eIOPMP extension". This is derived from v0.7 of the draft IOPMP
+   specification by making some tweaks and clarifications, and adding support
+   for match-based output WID/RRID. I.e. an eIOPMP that can map from an input
+   WID namespace to an output WID namespace.
+* "Security Levels"
+** The "Security Levels" ISA extension. This allows World IDs to be classified
+   according to gradations of SL. It also enforces sane relationships between
+   the SLs of the hart's 3 privilege levels.
+** The "eIOPMP Security Levels" non-ISA extension. This is to the eIOPMP what
+   the "Security Levels" ISA extension is to the hart, it classifies the
+   available World IDs into their respective SLs, which is useful if the eIOPMP
+   instance is configured to signal the resulting SL on outgoing transactions.
+* "Security Qualifiers"
+** The "Security Qualifiers" ISA extension. This extension defines the concept
+   of an SQ, a 2-tuple of SLs that one associates with a resource's physical
+   address range. The hart checks all outgoing load/store/fetch transactions
+   using the effective WID's SL and, by comparing that against the SQ for the
+   target physical address, it faults any transaction that isn't permitted.
+   This extension assumes the platform has a mechanism for defining SQs for the
+   accessible address space, e.g. as a PMA (Physical Memory Attribute).
+** The "eIOPMP Security Qualifiers" non-ISA extension. This is to the eIOPMP
+   what the "Security Qualifiers" extension is to the hart, it introduces the
+   SQ concept to the eIOPMP, implying that it will perform enforcement of SQs
+   on all input transactions before forwarding (or rejecting) them.
+* "Security Qualifiers PMP tracking".
+** The "Security Qualifiers for ePMP" ISA extension. This extension advertises
+   that the ePMP manages the SQs for the hart's accessible physical address
+   space, as an alternative to any other platform-specific mechanism for
+   recording SQs.
+** The "eIOPMP Security Qualifiers for eIOPMP" non-ISA extension. This is to
+   the eIOPMP what the "Security Qualifiers for ePMP" extension is to the hart,
+   it advertises that the eIOPMP manages the SQs for the eIOPMP's accessible
+   physical address space, as an alternative to any other platform-specific
+   mechanism for recording SQs.
 

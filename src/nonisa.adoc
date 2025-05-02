@@ -1,19 +1,25 @@
 :imagesdir: ./images
 
 [[nonisa]]
-== Non-ISA system architecture
+= Non-ISA system architecture
+
+This section of the document covers;
+
+* <<cache>>, cache semantics in the presence of Worlds.
+* <<busProtocols>>, about bus protocols.
+* <<integration>>, concerning integration challenges.
 
 [[cache]]
-=== Cache semantics
+== Cache semantics
 
-WG and TZ allow the SoC integrator to place “checker” logic arbitrarily close
-to the target device (in the interconnect topology) because each transaction
-carries its WID and NS fields with it. This means that any cache on the path
-that might allocate data into cache lines will need to tag those cache lines
-with the WID of the originating transaction. __Note, it is not necessary to tag
-cache lines with the NS attribute as well, because that is derived from the
-WID. I.e. two transactions cannot have different NS attributes and yet have the
-same WID.__
+RISC-V Worlds allow the SoC integrator to place “checker” logic arbitrarily
+close to the target device (in the interconnect topology) because each
+transaction carries its WID and NS fields with it. This means that any cache on
+the path that might allocate data into cache lines will need to tag those cache
+lines with the WID of the originating transaction. __Note, it is not necessary
+to tag cache lines with the NS attribute as well, because that is derived from
+the WID. I.e. two transactions cannot have different NS attributes and yet have
+the same WID.__
 
 If a subsequent request matches on a cached physical address but either of the
 following discrepancies is observed, then the cache line should be evicted, and
@@ -24,7 +30,7 @@ the new request should be treated as a cache miss.
 * Difference between the requested access mode and the current mode of the
   cache line.
 
-==== Why?
+=== Why?
 
 If an authority downstream from the cache has determined that a combination of
 WID, address, and access mode was acceptable, one can't assume that the outcome
@@ -35,7 +41,7 @@ that its fate is determined by the appropriate (downstream) authority. This is
 achieved by evicting the existing cache line and treating the access as a
 cache-miss.
 
-==== What about shared memory?
+=== What about shared memory?
 
 The obvious worst-case (i.e. where the cache-eviction behavior will be
 particularly punitive) is when a shared memory region is being used to exchange
@@ -48,7 +54,7 @@ to main memory is typically a large multiple of the cache-hit latency. In other
 cases, a DMA engine with input and output mapped to different WIDs (providing
 single-copy) may be a better approach for inter-world communication.
 
-==== Alternative to cache-tagging
+=== Alternative to cache-tagging
 
 As previously stated, the WG model typically assumes that the source is
 performing "marking" and that checkers are used en-route or at the target to
@@ -66,48 +72,19 @@ source-checking could be provided by an appropriately-configured eIOPMP
 instance. See <<eiopmp>> for more detail. The exploration of such an option is
 outside the scope of this document.
 
-=== NS-Attr and Physical Memory Attributes (PMAs)
-
-One of the properties of TZ is that it includes source-side checking, whereby
-the processor has awareness of the NS state across its physical address space
-and so it can compare that against its current NS state to determine whether or
-not to emit the requested load/store/fetch transaction. (The former is called
-NS-Attr, and the latter is called NS-Req.)
-
-One natural adaptation for RISC-V to provide equivalent/interoperable behavior
-is to add a new PMA type to represent NS-Attr. The way in which PMAs are
-coordinated in RISC-V is left to each implementation, but the assumption is
-that the hart can obtain the PMAs for any given physical address range that it
-is considering accessing. Whether (and how) distinct blocks (like eIOPMP
-instances) can obtain NS-Attr attributes in an equivalent manner is also
-implementation-dependent.
-
-This proposal suggests mechanisms by which the ePMP and/or eIOPMP blocks can,
-alternatively, record the NS-Attr attribute for the address ranges that they
-manage.
-
-* For ePMP, the addition of densely-packed, 2-bit `pmpns0`-`pmpns64` registers
-  to record the NS-Attr values for the corresponding PMP entries. Platforms
-  that don't use this mechanism for tracking NS-Attr can return `10b` (an
-  unused/reserved code). See <<tzAcceptReject>> and <<epmpRegisterMap>> for
-  more detail.
-* For eIOPMP, the `HWCFG3.ns_en` register field determines if the platform is
-  using the per-entry `ENTRY_CFG(i).ns_attr` field to carry the NS-Attr value.
-  See <<nsattr>> for more detail, and <<eiopmphwcfg3>> and <<eiopmpentrycfg>>
-  for register information.
-
-=== Bus protocols
+[[busProtocols]]
+== Bus protocols
 
 We have very carefully avoided being too specific in this proposal about how
-exactly bus transactions should transport their WID and NS fields, as this
-should be something that can be controlled at integration time and adapted to
-different bus protocols as required. In this section, we will describe some
-canonical assumptions about how these fields can be encoded (and decoded) in
-AXI5, but implementations may wish to use alternative representations, and
-integrators may subsequently wish to interpose gaskets to repack or renormalize
-these fields in different ways.
+exactly bus transactions should transport their WID and SL (and/or NS) fields,
+as this should be something that can be controlled at integration time and
+adapted to different bus protocols as required. In this section, we will
+describe some canonical assumptions about how these fields can be encoded (and
+decoded) in AXI5, but implementations may wish to use alternative
+representations, and integrators may subsequently wish to interpose gaskets to
+repack or renormalize these fields in different ways.
 
-==== WID
+=== WID
 
 For WID, there is an AXI5 field called `AxNSAID` (where the "x" is "R" or "W"
 for the read and write channels respectively) that corresponds very closely to
@@ -134,20 +111,21 @@ _does_ adhere to such constraints, it may be necessary to either;
   constraints in order to normalize/denormalize as required.
 * To encode/decode WIDs in a different field (e.g. in `AxUSER`).
 
-==== NS
+=== NS
 
 For multiple versions of AXI, the TZ "NS" bit has been encoded as the second
 bit of the `AxPROT` field, i.e. `AxPROT[1]`. It makes sense for RISC-V
 solutions to follow that convention also, and this is especially true if
 interacting with existing TZ-compatible IP.
 
-=== Integration
+[[integration]]
+== Integration
 
 As mentioned earlier in this chapter, certain integrations may wish to
-interpose a bus gasket to provide any additional normalization of WID/NS, as
+interpose a bus gasket to provide any additional normalization of WID/SL/NS, as
 required.
 
-==== Integrating RISC-V into a TZ-centric SoC
+=== Integrating RISC-V into a TZ-centric SoC
 
 The SoC may only be signaling the `AxPROT[1]` bit, in which case it might be
 necessary to normalize the `AxNSAID` attribute on its behalf before
@@ -155,7 +133,7 @@ transactions enter the RISC-V-centric subsystem (e.g. by ensuring that secure
 transactions are tagged with `AxNSAID=0` and non-secure transactions are tagged
 with `AxNSAID=1` - thereby mapping TZ to WID).
 
-==== Integrating TZ IP into a WG-centric SoC
+=== Integrating TZ IP into a WG-centric SoC
 
 The SoC may only be signaling the `AxNSAID` attribute, in which case it would
 make sense to normalize the `AxPROT[1]` bit on its behalf before transactions

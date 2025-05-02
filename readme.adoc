@@ -1,4 +1,4 @@
-= MIPS' Secure system partitioning with WorldGuard & TrustZone
+= MIPS' Secure system partitioning with RISC-V Worlds & Security Levels
 
 = License
 

@@ -1,0 +1,14 @@
+:imagesdir: ./images
+
+[[sqeiopmpNonISA]]
+== "eIOPMP Security Qualifiers" non-ISA extension
+
+=== Preamble
+
+This extension extends the eIOPMP Security Qualifiers non-ISA extension. It
+implements the same mechanism as seen in the ePMP Security Qualifiers ISA
+extension, which is to say that the eIOPMP entries become the custodians of the
+Security Qualifier for the associated address-range.
+
+Register details TBD.
+

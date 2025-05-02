@@ -1,0 +1,58 @@
+:imagesdir: ./images
+
+[[slNonISA]]
+== "eIOPMP Security Levels" non-ISA extension
+
+This section details enhancements on top of the eIOPMP extension set.
+
+=== Input
+
+With this extension enabled, eIOPMP will ascertain the Security Level for each
+input transaction.
+
+****
+eIOPMP SHOULD be configurable to allow the Security Level to be determined
+either (a) as an input field (alongside the RRID/WID input parameter), or (b)
+via the `widseclistX` device registers (derived from the RRID/WID input
+parameter).
+****
+
+=== Output
+
+With this extension enabled, the eIOPMP assumes its output to also contain the
+Security Level to be used for the outgoing/forwarded request (if accepted).
+
+=== Registers
+
+==== Summary
+
+Chapter 5 of v0.7 of the IOPMP specification contains a summary table of device
+registers. The definition given is 32-bit centric, so this document follows
+suit (we don't divide the register map into XLEN-sized chunks). The following
+is a modified excerpt of that IOPMP specification, in order to show eIOPMP
+additions and modifications (which are *emphasized*).
+
+[%header,cols="1,1,1"]
+|===
+| Offset | Register | Changes
+| `0x0100` | *WIDSECLIST0* | *New register*
+3+^| [...]
+| ... | *WIDSECLISTX* | *New register*
+|===
+
+==== `WIDSECLISTX` (new)
+
+[%header,cols="3,2,2,2,8"]
+|===
+| Field | Bits | R/W | Default | Description
+| sl7 | `31:28` | RW until locked | IMP | Security Level for WID 7
+5+^| [...]
+| sl0 | `3:0` | RW until locked | IMP | Security Level for WID 0
+|===
+
+* The above table shows the setting of security levels for WIDs 0 through 7,
+  this is `WIDSECLIST0`. The other `WIDSECLISTX` registers similarly set the
+  security levels for higher-order WIDs.
+* These registers only exists if the eIOPMP is configured without a "Security
+  Level" input signal.
+

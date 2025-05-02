@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **_NOTE:_** PROJECTS BUILT USING THE TEMPLATE SHOULD UPDATE THE BELOW SECTIONS AS-NEEDED.
 
+## [0.7.x]
+- Rename "WorldGuard" to "RISC-V Worlds" for the system concept and "World-ID" for the ISA
+- Generalize "TrustZone" NS-Req (Secure/Non-Secure) to "RISC-V Security Levels" (or "SL")
+- Generalize "TrustZone" NS-Attr (2-bits) to "RISC-V Security Qualifiers" (or "SQ")
+
 ## [0.6.4] - 2025-04-17
 - Reusable build system (used by sPMP too)
 - Move chapter 3 (external config) into chapter 2 (arch)

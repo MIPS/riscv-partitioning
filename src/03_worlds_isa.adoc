@@ -1,21 +1,11 @@
 :imagesdir: ./images
 
 [[isa]]
-== Core ISA
-
-Despite the support for TZ interoperability, we should emphasize that it is the
-WG ISA extensions that provide the world-view, literally and figuratively, for
-software running on RISC-V harts. TZ support is derived from WG support.
+== "World-ID" ISA extension set
 
 === Preamble
 
-==== WG
-
-Note that the WG proposal posits the potential existence of WG-unaware cores
-that could be served by an external marker. In this proposal, we focus on
-WG-aware cores and leave the case of WG-unaware cores as out-of-scope.
-
-The WG solution proposes a sequence of incremental extensions that
+The original WG solution proposes a sequence of incremental extensions that
 progressively add CSR registers but do not add any new instructions. We propose
 that;
 
@@ -38,78 +28,22 @@ that;
     future extensions.
 *** Alternative illegal-value (and WARL) semantics for the WG CSRs.
 ** Sane power-on defaults that behave as a system without any partitioning.
-** For TZ behavior;
-*** Addition of `mwidseclist` and its behavior. (See "Secure worlds" below in
-    <<secureWorlds>>.)
-*** Guidance on M-mode switching itself between Secure and Non-Secure. (See
-    "Non-Secure harts" below in <<nonSecureHarts>>.)
 ** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`,
    `vslwid` and associated behaviors.
 * Some of the WG CSRs be exposed for external control.
 
-[[tz]]
-==== TZ
-
-As stated above, support for TZ interoperability is derived from WG:
-
-* The ability to "speak TZ" comes from a single per-hart (M-mode,
-  secure-boot-lockable) CSR called `mwidseclist` that is used to map from WG
-  state (the effective WID) to TZ state ("Secure" or "Non-Secure"). This is
-  described in the next section.
-* A run-time privilege constraint is defined that mimics the behavior expected
-  of TZ software models, namely that;
-** The most secure privilege level cannot be Non-Secure unless all privilege
-   levels are Non-Secure. In RISC-V terms, S-mode cannot have a more secure
-   state than M-mode. I.e.
-....
-    SecureLevel(M-mode) >= SecureLevel(S-mode)
-....
-** The switching between Secure and Non-Secure worlds occurs at the most
-   privileged security level, so lower privilege levels are either all
-   Secure or Non-Secure, but not mixed. In RISC-V terms, S-mode and U-mode must
-   have the same security state. I.e.
-....
-    SecureLevel(S-mode) == SecureLevel(U-mode)
-....
-* Implementations must also provide a means for determining the NS-Attr of
-  physical address ranges, in order to provide TZ-style transaction-checking.
-** The implementation may choose to add NS-Attr as a new PMA (Physical Memory
-   Attribute).
-** Alternatively, implementations can choose to record NS-Attr attributes in
-   the ePMP and/or eIOPMP configurations themselves, as described in this
-   proposal.
-
-[[secureWorlds]]
-=== Secure worlds
-
-The most structurally important change relates to the "TrustZonification" of WG
-mentioned in the last section - that is, harmonizing the WID and NS concepts in
-the behavior of the processor core (and of the load/store/fetch transactions
-that it emits).
-
-The key addition is the `mwidseclist` CSR. Like `mwidlist` and `mwiddeleg`,
-this is a bitmask with a single bit representing each WID. The `mwidseclist`
-CSR acts as a mask to determine for any given WID whether it may emit
-transactions marked as "Secure" or must always emit transactions marked as
-"Non-Secure", in the TZ sense.
-
-Note, this definition strictly associates a WG WID with a corresponding TZ
-NS-Req (Secure/Non-Secure) state _within a hart_. It is beyond the scope of
-this document as to whether or not the other harts within the same system (or
-even the same core) should use the same WID/NS associations.
-
 [[nonHypervisorTree]]
 === Non-hypervisor decision tree
 
-The following diagram captures the WorldGuard decision tree (for core-emitted
-load/store/fetch transactions) as currently defined, without any support for
-the privilege modes introduced by the Hypervisor extension. Please note that
-the nested checking, whereby a `mwiddeleg` check is followed by a `mwidlist`
-check, is the reason that we don't have to insist that `mwiddeleg` be a subset
-of `mwidlist`, and the reason why we can avoid "illegal value" semantics.
+The following diagram captures the World-ID decision tree (for core-emitted
+load/store/fetch transactions), without any support for the privilege modes
+introduced by the Hypervisor extension. Please note that the nested checking,
+whereby a `mwiddeleg` check is followed by a `mwidlist` check, is the reason
+that we don't have to insist that `mwiddeleg` be a subset of `mwidlist`, and
+the reason why we can avoid "illegal value" semantics.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="WorldGuard non-Hypervisor decision tree"]
+[title="World-ID non-Hypervisor decision tree"]
 image::WG-V0.drawio.svg[]
 
 [[hypervisor]]
@@ -126,15 +60,16 @@ the expected behavior for the `V=0` case, i.e. for `HS` and `HU`.
 What remains is to define the expected behavior for the `VS` and `VU` states,
 which we do via the addition of two `HS`-level registers (that are not visible
 to `VS`), called `hlwid` and `hwiddeleg`, and a single `VS`-level shadow
-register called `vslwid`. These extend the existing WID and WID-delegation concepts to the
-additional level of privilege hierarchy that the H extension introduces.
+register called `vslwid`. These extend the existing WID and WID-delegation
+concepts to the additional level of privilege hierarchy that the H extension
+introduces.
 
-The following diagram extends the previous one to illustrate the WorldGuard
+The following diagram extends the previous one to illustrate the World-ID
 decision tree when the Hypervisor extension is enabled;
 
 [[hypervisorWGtree]]
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="WorldGuard Hypervisor-extended decision tree"]
+[title="World-ID Hypervisor-extended decision tree"]
 image::WG-V1.drawio.svg[]
 
 === Configuration handling
@@ -154,42 +89,38 @@ if, rather than them being written with illegal values, __their existing values
 become implicitly illegal__ due to changes to other registers.
 
 In this proposal, we opt for different semantics to handle such cases and
-therefore deviate from the WG proposal. Instead of having "illegal values" that
-need to be corrected (in a WARL sense), we allow all registers to assume
-arbitrary values, whereby the so-called "illegal values" simply correspond to
-(mis)configurations that by their nature will fail to operate. (The only
-corrective WARL behavior required is to limit the number of supported bits.)
+therefore deviate from the original WG proposal. Instead of having "illegal
+values" that need to be corrected (in a WARL sense), we allow all registers to
+assume arbitrary values, whereby the so-called "illegal values" simply
+correspond to (mis)configurations that by their nature will fail to operate.
+(The only corrective WARL behavior required is to limit the number of supported
+bits.)
 
 ==== Register visibility
 
 This proposal takes a minimalist approach to register visibility. Specifically,
-WG registers are only visible to privilege levels that have writable control
-over them. If a software context needs to know any WID or WID-bitmask values
-that it does not have control over (e.g. S-mode software wanting to know
+World-ID registers are only visible to privilege levels that have writable
+control over them. If a software context needs to know any WID or WID-bitmask
+values that it does not have control over (e.g. S-mode software wanting to know
 `mwiddeleg`, which indicates the set of WIDs delegated to it), then that will
 need to be conveyed to it through software mechanisms.
 
 [[lockablePartitioning]]
 ==== Lockable partitioning registers
 
-`mwid`, `mwidlist`, `mwidseclist`
+`mwid`, `mwidlist`
 
 * These are the CSR registers that are exposed for external configuration
   control.
 * These registers are assumed to be set statically to constrain the hart until
   it is next reset, and the behavior of the "run-time manipulable registers" is
   governed by these registers.
-* Apart from the "L"ock bit in `mwid` (which is sticky to 1 and renders all 3
+* Apart from the "L"ock bit in `mwid` (which is sticky to 1 and renders both
   registers read-only until the next reset), these registers are modifiable
   independently and no combination of values is illegal, _per se_.
 * These partitioning registers place no constraints on the order in which
   they're read or written. (This simplifies the hardware design and resulting
   programming model.)
-* `mwidseclist`: this bitmask defines the TZ security state (NS) of all the
-  WIDs (0 implies "Secure", 1 implies "Non-Secure"). It does not matter which
-  WIDs are contained in `mwidlist` nor which WIDs are assigned to `mwid`,
-  `mlwid`, and `slwid` - the `mwidseclist` CSR can be modified arbitrarily up
-  until the "L"ock bit is set in `mwid`.
 
 [[runtimeManipulable]]
 ==== Run-time manipulable registers
@@ -261,9 +192,9 @@ of outgoing transactions.
 The ISA inherently limits the number of supported WIDs ("NWorlds" in WG terms)
 to `XLEN`,footnote:[whether `XLEN` is 32, 64, or 128 depends on the RISC-V
 hardware configuration] as there are XLEN-bit registers that serve as WID
-bitmasks (`mwidlist`, `mwiddeleg`, `mwidseclist`, `hwiddeleg`). However, an
-extension will likely be proposed to extend the WID bitmasks, in which case
-this limit may be overcome.
+bitmasks (`mwidlist`, `mwiddeleg`, `hwiddeleg`). However, an extension will
+likely be proposed to extend the WID bitmasks, in which case this limit may be
+overcome.
 
 The ISA has another inherent upper limit (to the number of supported WIDs) of
 2^16^, due to WID register fields being 16-bit wide.footnote:[Using a 16-bit
@@ -281,26 +212,26 @@ zero.
   `vslwid`), the result will determine the supported WID-width in bits, the
   range of WIDs will therefore be from 0 to 2^WIDwidth^-1, inclusive.
 * If the CSR is a WID-bitmask-holding register (`mwidlist`, `mwiddeleg`,
-  `mwidseclist`, `hwiddeleg`), the result will determine the range of WIDs
-  itself, and this should be a power of 2.
+  `hwiddeleg`), the result will determine the range of WIDs itself, and this
+  should be a power of 2.
 
 The implementation must ensure that the two methods for determing the valid WID
 range are consistent with one another, i.e. width(WIDBITMASK) == 2^width(WID)^
 
+[[decisionLogic]]
 === Decision logic
 
-The following subsections show the flow for determining whether to accept or
-reject a load/store/fetch transaction. Note that in all cases where the
-decision is to reject the transaction, the fault type chosen for the rejection
-will be derived from the transaction type:
+The following two subsections describe how the World-ID extension determines
+whether to accept or reject a load/store/fetch transaction. In all cases where
+the decision is to reject the transaction, the fault type chosen for the
+rejection will be derived from the transaction type:
 
 * a load will trigger a "Load access fault"
 * an instruction fetch will trigger an "Instruction access fault"
 * a store will trigger a "Store/AMO access fault"
 
 In the cases where the decision is to accept the transaction, this decision
-logic also determines the WID and NS values with which to tag the outgoing
-transaction.
+logic also determines the WID value with which to tag the outgoing transaction.
 
 ==== Effective WID
 
@@ -315,31 +246,7 @@ The WID of each privilege mode is determined by the following registers;
 
 * The "effective WID" is the WID of the current privilege mode.
 
-==== Effective security state (NS-Req)
-
-* The security state of a privilege mode is determined by using that privilege
-  level's WID as an index into the `mwidseclist` register (0="Secure",
-  1="Non-Secure"). Zero is an appropriate default for parts that require no TZ
-  support.
-* The "effective security state" is the security state of the current privilege
-  level.
-
-==== TZ privilege constraints
-
-These checks implement the "run-time privilege constraint" described in <<tz>>.
-
-* If the hart is in S-mode, the security state of S-mode is Secure, and the
-  security state of M-mode is Non-Secure, reject transaction.
-* If the hart is in U-mode, and the security states of S-mode and U-mode don't
-  match, reject transaction.
-
-It should be noted that, semantically, a privilege constraint fails on the
-first instruction fetch after the `xRET` instruction, even if the
-implementation detects the anomalous condition earlier than that. Similarly,
-after the fault, the values in `xstatus/xcause/`[...] will reflect the
-instruction address and privilege mode targetted by the `xRET` instruction.
-
-==== WG accept/reject
+==== Accept/reject
 
 Please see <<hypervisorWGtree>> in <<hypervisor>> for a visual representation
 of this decision logic.
@@ -354,90 +261,14 @@ of this decision logic.
 * If the transaction is accepted, the effective WID is signaled on the outgoing
   transaction.
 
-[[tzAcceptReject]]
-==== TZ accept/reject
-
-This decision involves comparing the "effective security state" against the
-security attribute of the physical address range being accessed (which may be a
-PMA - a Physical Memory Attribute - or it may be recorded in the ePMP
-configuration). This decision also determines, if the transaction is accepted,
-whether the outgoing transaction should be signaled as Secure or Non-Secure. In
-the following description we are assuming this logic is implemented as part of
-the ePMP, though implementations are free to provide these behaviors through
-other means.
-
-* ePMP will add the effective security state to its inputs (alongside current
-  inputs: the current privilege mode, the address range, and the access type).
-* ePMP will add the TZ `NS-Attr` to the list of memory attributes it considers,
-  whether that is sourced from the platform's PMA infrastructure or recorded in
-  the ePMP's own configuration.
-* The NS-Attr memory attribute supports three options for the comparison with
-  the effective security state and for determining the NS-Req state for the
-  resulting transaction (if accepted).
-
-[%header,cols="1,3,2,2,2"]
-|===
-| NS-Attr | NS-Attr name | Permitted Non-Secure Requests | Permitted Secure Requests | Resulting NS-Req for transaction
-
-| `00b` | *Secure Memory* | None | Read, Write, Execute | Secure
-| `01b` | *Secure Private Non-Secure Memory* | None | Read, Write | Non-Secure
-| `10b` | Unused/reserved/illegal | None | None | Fault
-| `11b` | *Non-Secure Memory* | Read, Write, Execute | Read, Write | Non-Secure
-|===
-
-A note about MMU page table walks, whose memory access are performed in the
-context of S-mode and therefore use the S-mode WID. _Page table entries cannot
-be located in "Secure Private Non-Secure Memory"._ If the S-mode WID is Secure,
-then page-table entries are expected to be in "Secure Memory" only, whereas if
-the S-mode WID is Non-Secure, the page-table entries are expected to be in
-"Non-Secure Memory" only.
-
-[[nonSecureHarts]]
-=== Non-Secure harts
-
-If the intention is for an entire hart to run as Non-Secure, i.e. for the WID
-assigned to M-mode to be Non-Secure, there is a subtlety to note about
-modifications to the `mwid` and `mwidseclist` CSR registers.
-
-Consider, if the current `mwid` and `mwidseclist` CSR values imply that the
-effective security state of M-mode is Secure, then any M-mode instruction
-fetches must necessarily be going to Secure Memory. (Conversely if the
-effective security state of M-mode is Non-Secure, the M-mode instruction
-fetches must be to/from Non-Secure Memory.) It follows that M-mode can never
-safely cause its current security state to change by issuing writes to `mwid`
-or `mwidseclist`, because the write that triggers the change of security state
-will be followed immediately by an instruction fetch fault, as the next
-instruction is being fetched from the same type of memory as before, but the
-changed security state now expects the opposite type of memory.
-
-Now, if the configuration of a Non-Secure `mwid` is via external configuration,
-before the harts are executing, this problem doesn't arise. Likewise, if M-mode
-doesn't need to support running in a Non-Secure state, no problem. This issue
-only arises if M-mode is performing the security state change within the hart
-itself through write operations.
-
-The recommended solution, for any platform/implementation that needs to handle
-this case, is to "embrace the fault". Namely, in preparation for changing
-M-mode's security state, the trap vectors will necessarily need to be changed
-to point to the type of memory that the new security state will expect, and so
-once M-mode makes the write that triggers the change of security state, the
-following instruction fetch will fault into a M-mode trap handler that is
-running out of the type of memory that the new security state expects. In this
-way, control is passed from the previously-required memory type to the
-newly-required memory type.
-
 === Power-on defaults
 
 The working assumption is that power-on defaults should serve the purpose of
 leaving the system without any effects or obligations associated with the
 partitioning functionality. This is mostly achieved by having all settings come
-up as "zero".footnote:[This is probably also the reason that TZ interprets the
-"NS" setting with zero as "Secure" and non-zero as "Non-Secure", because having
-"Secure" be the default provides "backward-compatibility", namely a system that
-is unrestricted by default.] External configuration (from a RoT) or early boot
-M-mode firmware can choose to impose "non-zero" restrictions, so it makes sense
-for the defaults to behave as though the system had neither WG nor TZ technology
-nor constraints in place.
+up as "zero". External configuration (from a RoT) or early boot M-mode firmware
+can choose to impose "non-zero" restrictions, so it makes sense for the
+defaults to behave as though the system had no World-ID constraints in place.
 
 ==== External configuration disabled or optional
 
@@ -446,25 +277,25 @@ The one problem with the "zero method" is that the bitmask registers
 privilege modes) are allowed to issue transactions, and so if those registers
 are zero, the affected modes will be unable to issue an instruction fetch...
 
-* If M-mode can be obliged to initialize WG settings before handing control to
-  S-mode or U-mode, then M-mode's use of `mwid` suffices to bootstrap.
-* Otherwise, to have system defaults that require no WG initialization, i.e.
-  that function in all modes as though WG was not present, then `mwiddeleg`
-  and `hwiddeleg` should default to `0x1`.
+* If M-mode can be obliged to initialize World-ID settings before handing
+  control to S-mode or U-mode, then M-mode's use of `mwid` suffices to
+  bootstrap.
+* Otherwise, to have system defaults that require no World-ID initialization,
+  i.e. that function in all modes as though WG was not present, then
+  `mwiddeleg` and `hwiddeleg` should default to `0x1`.
 
-In <<wgRegisterMap>> below, we will assume the latter situation, such that the
-power-on defaults allow the system to function "as though WG and TZ were
+In <<worldRegisterMap>> below, we will assume the latter situation, such that the
+power-on defaults allow the system to function "as though World-ID were
 absent". If the implementation context has different requirements (such as an
 obligatory external configuration via RoT), the power-on defaults can be
 adapted.
 
-[[wgRegisterMap]]
-=== WorldGuard Register map
+[[worldRegisterMap]]
+=== World-ID Register map
 
 ==== Summary
 
-The following table contains both the CSRs proposed by the WG specification and
-those added by this proposal.
+The following table contains the CSRs defined by this proposal.
 
 [%header,cols="2,2,2,2,3"]
 |===
@@ -472,7 +303,6 @@ those added by this proposal.
 
 | `mwid` | RW for M until locked | ??? | `0x0` | WID for M-mode
 | `mwidlist` | RW for M until locked | ??? | `0x1` | Set of allowable WIDs
-| `mwidseclist` | RW for M until locked | ??? | `0x0` | Set of Non-Secure WIDs
 | `mlwid` | RW for M | `0x390` | `0x0` | WID for (H)S-mode
 | `mwiddeleg` | RW for M | `0x748` | `0x1` | Set of WIDs delegated to (H)S-mode
 | `hlwid` | RW for (H)S | ??? | `0x0` | WID for VS-mode
@@ -496,11 +326,10 @@ The following sections provide more detail on each of these registers.
 Only Ceil(Log~2~(NWorlds)) LSBs are writable, others are read-only zero.
 |===
 
-This register as well as `mwidlist` and `mwidseclist` become locked once the L
-bit is set, after which the registers are read-only (and so `mwid` can't be
-unlocked) and writes are silently dropped. The locking is only released when
-the block is reset. When unlocked, all writes to these registers commit
-atomically.
+This register and `mwidlist` become locked once the L bit is set, after which
+the registers are read-only (and so `mwid` can't be unlocked) and writes are
+silently dropped. The locking is only released when the block is reset. When
+unlocked, all writes to these registers commit atomically.
 
 Each CSR write to `mwid` updates both L and WID fields together. When writing 1
 to `mwid.L`, the lock on all 3 registers takes effect after the write.
@@ -529,30 +358,6 @@ read-only zero.
 
 Note, `mwidlist` restrictions only apply to privilege modes below M-mode. I.e.
 M-mode's use of the `mwid` WID is not constrained by `mwidlist`.
-
-[[mwidseclist]]
-==== `mwidseclist`: Set of Non-Secure WIDs
-
-[%header,cols="1,1,5"]
-|===
-| Name | Bits | Description
-| MASK | `[XLEN-1]:0`
-| Bit-vector indicating which WIDs should be considered "Non-Secure", in the TZ
-sense. LSB corresponds to WID 0, `NWorlds` LSBs are used, others are read-only
-zero.
-|===
-
-This register is locked if and only if the `mwid` register is. The
-`mwidseclist` CSR ignores writes when locked by `mwid`. CSR writes to
-`mwidseclist` and `mwid` are ordered by the hardware in the same manner as
-writes to ePMP registers.  When necessary, software can enforce a specific
-ordering between a CSR write and other instructions with an appropriate FENCE.
-
-Only the lower NWorlds bits of MASK are implemented. The remaining are
-read-only zero.
-
-The polarity is such that a WID is considered "Secure" if its corresponding bit
-in `mwidseclist` is 0, or "Non-Secure" if its corresponding bit is 1.
 
 ==== `mlwid`: WID for (H)S-mode
 
@@ -654,21 +459,4 @@ This CSR is the virtualization shadow register of the slwid register. In hypervi
 
 Only Ceil(Log~2~(NWorlds)) bits of WID are implemented. The remaining are
 read-only zero.
-
-[[epmpRegisterMap]]
-=== ePMP Register Map
-
-The only register-map modification to ePMP contemplated by this proposal
-concerns the possibility for implementations to record the NS-Attr attribute
-within the ePMP configuration.
-
-The NS-Attr attribute is a 2-bit value, of which one value (`10b`) is
-documented as being unused/reserved. As such, this proposal suggests;
-
-* the addition of `pmpns0`-`pmpns63` configuration registers, as
-  densely-packed, 2-bit-wide registers for those platforms that use this method
-  to record NS-Attr attributes.
-* for implementations that manage NS-Attr attributes by other means, returning
-  `10b` on reads (and silently dropping writes) would provide a useful
-  runtime-detection mechanism for software.
 

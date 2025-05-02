@@ -1,7 +1,7 @@
 :imagesdir: ./images
 
 [[eiopmp]]
-== eIOPMP
+== The "eIOPMP" extension
 
 It is assumed the reader is familiar with the RISC-V IOPMP Architecture
 Specification (v0.7), upon which this section is based. It specifies a firewall
@@ -12,8 +12,8 @@ eIOPMP is a proposed generalization of the IOPMP design, and so it is described
 as a series of modifications to the IOPMP definition, rather than as a
 self-contained definition. The resulting eIOPMP can be instantiated in a
 variety of ways, one of which corresponds to the original IOPMP definition, and
-some of which correspond to hardware platform components described in the WG
-specification and whitepaper.
+some of which correspond to hardware platform components described in the
+original WG specification and whitepaper.
 
 === Enforcement vs Gasket
 
@@ -22,8 +22,7 @@ It is useful to distinguish between two concepts when talking about eIOPMP.
 . An enforcement component that looks up and applies rules to memory access
   requests, which;
 .. returns an accept/reject (i.e. pass/fail) decision for each request.
-.. may extend/replace metadata in the request, ie. "WID marking" (modifying the
-   WID) or modifying the NS-Req attribute.
+.. may extend/replace metadata in the request, ie. "WID marking".
 .. is agnostic to the bus interface (and/or input/output devices), as input and
    output are represented in an abstract form (even if they align 1:1 with sets
    of AXI5 fields).
@@ -96,7 +95,7 @@ The IOPMP definition contains multiple tables that can be instantiated with
 variously-configured sizes, as software can query the instance about its
 geometry at run-time. As such, it is in principle possible to configure the
 IOPMP with zero-sized tables, which would imply that the IOPMP checker logic
-could be compiled out – there’ll be nothing to check against. (This is required
+could be compiled out - there'll be nothing to check against. (This is required
 for the “wgMarker” function, as described in WorldGuard documentation.)
 
 However, the IOPMP spec follows a whitelisting model, inferring that an IOPMP
@@ -115,16 +114,6 @@ eIOPMP assumes its input to consist of;
 * the target address range
 * the requested access type
 * the RRID/WID parameter
-* optionally, the NS-Req state of the request. If the eIOPMP is not configured
-  to consume this field as part of the request, then the `widseclist` device
-  register is used to derive the NS state from the RRID/WID parameter (similar
-  to the `mwidseclist` CSR, see <<mwidseclist>>).
-
-****
-eIOPMP SHOULD be configurable to allow the NS-Req field to be determined either
-(a) as an input field (alongside the RRID/WID input parameter), or (b) via the
-`widseclist` device register (derived from the RRID/WID input parameter).
-****
 
 As a look-aside model, it does not process any request data (in the case of
 writes) nor response data (in the case of reads/fetches).
@@ -136,25 +125,6 @@ eIOPMP assumes its output to consist of;
 * the accept/reject decision
 * if accepted;
 ** the RRID/WID parameter
-** the NS-Req state of the request
-
-[[nsattr]]
-==== NS-Attr
-
-As was discussed in the ISA chapter, in <<tz>>, implementations must provide a
-means for determining the NS-Attr of physical address ranges. For the ISA, one
-optional solution is to record the NS-Attr field in the `pmpnsX` registers of
-the ePMP, and there is a means to detect at run-time whether that mechanism is
-being used by the implementation. Similarly for eIOPMP, an implementation may
-choose to record the NS-Attr field in the eIOPMP array entries, on a
-per-address-range basis.
-
-****
-eIOPMP SHOULD provide a per-entry configuration that implementations can use to
-record the NS-Attr for the corresponding physical address range. It should be
-run-time-detectable as to whether the implementation is using this mechanism or
-not.
-****
 
 ==== Match-based output WIDs
 
@@ -250,6 +220,11 @@ eIOPMP implementations MUST specify the behavior of match-specific WID overrides
 when multiple, non-prioritized entries are matched.
 ****
 
+Note that many smaller implementations will (likely) only have priority
+entries, so they will be unaffected by this consideration. The use of
+non-priority entries caters to IOPMP implementations (or instances) that have
+large numbers of entries to match against.
+
 === Registers
 
 ==== Summary
@@ -267,7 +242,6 @@ additions and modifications (which are *emphasized*).
 | `0x0010` | HWCFG2 | No change
 | `0x0014` | ENTRYOFFSET | No change
 | `0x0018` | *HWCFG3* | *New register*
-| `0x001c` | *WIDSECLIST* | *New register*
 3+^| [...]
 | `ENTRYOFFSET + (i*0X10)` | ENTRY_ADDR(i) | No change
 | `ENTRYOFFSET + (i*0X10) + 0x4` | ENTRY_ADDRH(i) | No change
@@ -293,9 +267,7 @@ eIOPMP registers read-only (except for the "Error capture registers").
 `HWCFG0.rrid_trans_prog` apply here, but to the whole eIOPMP configuration (not
 just to a specific register or field), with the exception of the "Error Capture
 Registers".
-| ns_en | `2:2` | R | IMP
-| Indicates whether NS-Attr is recorded in `ENTRY_CFG(i).ns_attr`.
-| rsv | `31:3` | ZERO | 0 | Reserved, wired to zero.
+| rsv | `31:2` | ZERO | 0 | Reserved, wired to zero.
 |===
 
 * If `chk_addr` is zero, checking always matches on the first IOPMP entry
@@ -305,25 +277,6 @@ Registers".
   `HWCFG0.rrid_transl_prog` in the IOPMP specification: the field defaults to 1
   out of reset (the configuration is unlocked), supports a write-1-to-clear
   semantic, and is sticky to 0 (the configuration is locked).
-* If `ns_en` is zero, then the implementation does not use the per-entry
-  `ENTRY_CFG(i).ns_attr` field to determine the NS-Attr attribute of the
-  corresponding physical address range.
-
-==== `WIDSECLIST: 0x001c` (new)
-
-[%header,cols="3,2,2,2,8"]
-|===
-| Field | Bits | R/W | Default | Description
-| mask | `31:0` | RW until locked | IMP
-| Bit-vector indicating which WIDs should be considered "Non-Secure", in the TZ
-sense. LSB corresponds to WID 0, `NWorlds` LSBs are used, others are read-only
-zero.
-|===
-
-* This register only exists if the eIOPMP is configured without an "NS" input
-  signal.
-* `mask` represents the same information as the `MASK` field in the
-  `mwidseclist` CSR (see <<mwidseclist>>).
 
 [[eiopmpentrycfg]]
 ==== `ENTRY_CFG(i): ENTRYOFFSET + (i*0x10) + 0x8` (modified)
@@ -337,10 +290,7 @@ zero.
 | *wid_en* | `11:11` | WARL | 0
 | *New field:* causes matching transactions to have `wid` override the RRID/WID
 field of the request.
-| *ns_attr* | `13:12` | WARL | 0
-| *New field:* determines the TZ "NS-Attr" attribute for the address range,
-only if `HWCFG3.ns_en` is non-zero.
-| *rsv* | `15:14` | ZERO | 0
+| *rsv* | `15:12` | ZERO | 0
 | *Modified:* shrunk, used to be bits `31:11`.
 | *wid* | `31:16` | WARL | DC
 | *New field:* WID override value, if `wid_en` is set.
@@ -348,11 +298,6 @@ only if `HWCFG3.ns_en` is non-zero.
 
 * `wid_en` determines whether a WID-override, using `wid` as the value, will
   apply to transactions that match on this IOPMP entry.
-* The `ns_attr` field determines the `NS-Attr` for the physical address long so
-  long as `HWCFG3.ns_en` is non-zero (otherwise there is some other,
-  implementation-specific mechanism for determining this attribute). The
-  `NS-Req` of the input is compared against `NS-Attr` following the same
-  decision logic described in <<tzAcceptReject>>.
 
 === Hardware configuration
 
