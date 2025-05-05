@@ -237,6 +237,23 @@ whole (with the exception of the "Error capture registers").__
 __The whole eIOPMP configuration interface should be exposed for external
 control.__
 
+[[rotMode]]
+==== RoT-mode and M-mode
+
+The ability to perform lockable configuration from outside the (sub)system is
+in many ways comparable to the ability to perform lockable configuration from
+M-mode within the (sub)system - once locked, the configuration is inherited by
+run-time M-mode but cannot be altered. With this view, one can talk about a
+metaphorical "RoT-mode", which is more highly privileged than run-time M-mode,
+because the former can configure constraints on the latter.
+
+This ostensible "RoT-mode" concept is vague at best, given that it could apply
+to early-boot M-mode code or to a completely external agent. Nonetheless, as we
+will see in the diagrams of <<nonHypervisorTree>> and <<hypervisor>>, the
+addition of this "higher than M-mode" privilege level allows a
+constraints-based view of the privilege levels to extend from the hart to
+beyond-the-hart - constraining M-mode in the process.
+
 === Extensions and documentation grouping
 
 In keeping with RVI convention, functionality is introduced in small units

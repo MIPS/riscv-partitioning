@@ -37,10 +37,17 @@ that;
 
 The following diagram captures the World-ID decision tree (for core-emitted
 load/store/fetch transactions), without any support for the privilege modes
-introduced by the Hypervisor extension. Please note that the nested checking,
-whereby a `mwiddeleg` check is followed by a `mwidlist` check, is the reason
-that we don't have to insist that `mwiddeleg` be a subset of `mwidlist`, and
-the reason why we can avoid "illegal value" semantics.
+introduced by the Hypervisor extension.
+
+Please note that the nested checking, whereby a `mwiddeleg` check is followed
+by a `mwidlist` check, is the reason that we don't have to insist that
+`mwiddeleg` be a subset of `mwidlist`, and the reason why we can avoid "illegal
+value" semantics.
+
+Also worthy of note is the use of an "RoT" privilege level, as discussed in
+<<rotMode>>. This might be an external agent or it might be early boot M-mode,
+the point is that it controls _lockable_ configuration, that, once locked,
+constrains run-time M-mode.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="World-ID non-Hypervisor decision tree"]
