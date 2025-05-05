@@ -18,9 +18,9 @@ that;
 ** It is reasonable to have WG permanently enabled because default settings can
    be obtained that provide behavior functionally equivalent to WG being
    disabled.
-** As such, we will document the architecture as it exists with all extensions
-   fully implemented and enabled, after which we will define the extensions as
-   increasing subsets of that final functionality.
+** As such, we will briefly define the extensions by the registers they
+   introduce, after which we will document the architecture as it exists with
+   all extensions fully implemented and enabled.
 * The publicly-available WG definition is modified;
 ** For improvement of WG;
 *** Addition of `mwid` and `mwidlist` CSRs and their respective
@@ -36,37 +36,79 @@ that;
    `vslwid` and associated behaviors.
 * Some of the WG CSRs be exposed for external control.
 
-[[nonHypervisorTree]]
-=== Non-hypervisor decision tree
+=== Extensions
 
-The following diagram captures the World-ID decision tree (for core-emitted
-load/store/fetch transactions), without any support for the privilege modes
-introduced by the Hypervisor extension.
+In the following subsections, it is worth noting the use of the "RoT" privilege
+level concept, as discussed in <<rotMode>>. This might be an external agent or
+it might be early boot M-mode, the point is that it controls _lockable_
+configuration, that, once locked, constrains run-time M-mode.
 
-Please note that the nested checking, whereby a `mwiddeleg` check is followed
-by a `mwidlist` check, is the reason that we don't have to insist that
-`mwiddeleg` be a subset of `mwidlist`, and the reason why we can avoid "illegal
-value" semantics.
+==== Smwid: A hart-specific WID
 
-Also worthy of note is the use of an "RoT" privilege level, as discussed in
-<<rotMode>>. This might be an external agent or it might be early boot M-mode,
-the point is that it controls _lockable_ configuration, that, once locked,
-constrains run-time M-mode.
+Creation of a lockable `mwid` register provides the entry-level extension. This
+register may be set and locked before the hart comes out of reset, or it may
+still be writable. Transactions from all 3 privilege levels are tagged with the
+same WID.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID non-Hypervisor decision tree"]
-image::WG-V0.drawio.svg[]
+[title="World-ID Smwid decision tree"]
+image::WG-smwid.drawio.svg[]
+
+==== Smlwid: Lower-than-M-mode WID support
+
+Dependent on Smwid, this extension creates the `mlwid` register that specifies
+the WID for transactions from the lower privilege levels (S and U).
+
+[caption="Figure {counter:image}: ", reftext="Figure {image}"]
+[title="World-ID Smlwid decision tree"]
+image::WG-smlwid.drawio.svg[]
+
+==== Smwidl: Delegation to M-mode
+
+Dependent on Smlwid, this extension creates the `mwidlist` register that is
+implicitly locked whenever `mwid` is, and which acts as a bitmask to authorize
+the WID values that `mlwid` can successfully issue transactions for (i.e.
+without being faulted). This functionality allows M-mode to be locked into a
+configuration that;
+
+* stipulates M-mode's WID (`mwid`),
+* stipulates the set of WIDs that S-mode and U-mode should use
+  (`mwidlist`),
+* allows M-mode to modify `mlwid` as it pleases, but faults S and U mode
+  transactions if the corresponding bit in `mwidlist` isn't asserted.
+
+[caption="Figure {counter:image}: ", reftext="Figure {image}"]
+[title="World-ID Smwidl decision tree"]
+image::WG-smwidl.drawio.svg[]
+
+[[smwidd]]
+==== Smwidd: User-mode and delegation to S-mode
+
+Dependent on Smwidl, this extension creates the `mwiddeleg` and `slwid`
+registers, allowing M-mode to delegate to S-mode the capability of setting WIDs
+for U-mode. `slwid` controls the WID for U-mode transactions, meaning that
+`mlwid` now applies only to S-mode transactions. It continues to be the case
+that U-mode transactions will fault if the effective WID (now `slwid`) does not
+have the corresponding bit asserted in `mwidlist`. Now, U-mode transactions
+will _also_ fault if the bit corresponding to `slwid` is not asserted in
+`mwiddeleg` - meaning that the latter is an M-mode-controlled filter on the
+WIDs that S-mode can (successfully) assign to U-mode. I.e. constrained
+delegation from M to S.
+
+[caption="Figure {counter:image}: ", reftext="Figure {image}"]
+[title="World-ID Smwidd decision tree"]
+image::WG-smwidd.drawio.svg[]
 
 [[hypervisor]]
-=== Hypervisor support
+==== Smwidv: Hypervisor support
 
 The addition of the Hypervisor extension adds a boolean `V` mode that affects
 the behavior of `S` and `U` modes. When `V=0`, `S` and `U` mode are referred to
 as `HS` and `HU` respectively (here `H` represents "Host" or "Hypervisor",
 either will do). When `V=1`, they are referred to as `VS` and `VU`
 respectively. (`V` represents "Virtual".) When the Hypervisor extension is
-enabled, the behavior defined in <<nonHypervisorTree>> for `S` and `U` is also
-the expected behavior for the `V=0` case, i.e. for `HS` and `HU`.
+enabled, the behavior defined in <<smwidd>> for `S` and `U` is also the
+expected behavior for the `V=0` case, i.e. for `HS` and `HU`.
 
 What remains is to define the expected behavior for the `VS` and `VU` states,
 which we do via the addition of two `HS`-level registers (that are not visible
@@ -75,13 +117,15 @@ register called `vslwid`. These extend the existing WID and WID-delegation
 concepts to the additional level of privilege hierarchy that the H extension
 introduces.
 
-The following diagram extends the previous one to illustrate the World-ID
-decision tree when the Hypervisor extension is enabled;
+Dependent on Smwidd, this extension adds the `hlwid`, `hwiddeleg`, and `vslwid`
+registers, that provide the adaptations illustrated below whenever the
+Hypervisor extension is enabled. (When the Hypervisor extension isn't enabled,
+this extension has no effect.)
 
 [[hypervisorWGtree]]
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Hypervisor-extended decision tree"]
-image::WG-V1.drawio.svg[]
+[title="World-ID Smwidv decision tree"]
+image::WG-smwidv.drawio.svg[]
 
 === Configuration handling
 
@@ -470,74 +514,4 @@ This CSR is the virtualization shadow register of the slwid register. In hypervi
 
 Only Ceil(Log~2~(NWorlds)) bits of WID are implemented. The remaining are
 read-only zero.
-
-=== Extensions
-
-As was described in this chapter's preamble, we have so far described the fully
-implemented and enabled functionality of the World-ID ISA extension. It remains
-for us to describe the sequence of intermediate extensions that arrive at this
-final state. We describe the extensions using the same visual language as was
-used in <<nonHypervisorTree>> and <<hypervisor>>.
-
-==== Smwid
-
-Creation of a lockable `mwid` register provides the entry-level extension. This
-register may be set and locked before the hart comes out of reset, or it may
-still be writable. Transactions from all 3 privilege levels are tagged with the
-same WID.
-
-[caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smwid decision tree"]
-image::WG-smwid.drawio.svg[]
-
-==== Smlwid
-
-Dependent on Smwid, this extension creates the `mlwid` register that specifies
-the WID for transactions from the lower privilege levels (S and U).
-
-[caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smlwid decision tree"]
-image::WG-smlwid.drawio.svg[]
-
-==== Smwidl
-
-Dependent on Smlwid, this extension creates the `mwidlist` register that is
-implicitly locked whenever `mwid` is, and which acts as a bitmask to authorize
-the WID values that `mlwid` can successfully issue transactions for (i.e.
-without being faulted). This functionality allows M-mode to be locked into a
-configuration that;
-
-* stipulates M-mode's WID (`mwid`),
-* stipulates the set of WIDs that S-mode and U-mode should use
-  (`mwidlist`),
-* allows M-mode to modify `mlwid` as it pleases, but faults S and U mode
-  transactions if the corresponding bit in `mwidlist` isn't asserted.
-
-[caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smwidl decision tree"]
-image::WG-smwidl.drawio.svg[]
-
-==== Smwidd
-
-Dependent on Smwidl, this extension creates the `mwiddeleg` and `slwid`
-registers, allowing M-mode to delegate to S-mode the capability of setting WIDs
-for U-mode. `slwid` controls the WID for U-mode transactions, meaning that
-`mlwid` now applies only to S-mode transactions. It continues to be the case
-that U-mode transactions will fault if the effective WID (now `slwid`) does not
-have the corresponding bit asserted in `mwidlist`. Now, U-mode transactions
-will _also_ fault if the bit corresponding to `slwid` is not asserted in
-`mwiddeleg` - meaning that the latter is an M-mode-controlled filter on the
-WIDs that S-mode can (successfully) assign to U-mode. I.e. constrained
-delegation from M to S.
-
-The diagram in <<nonHypervisorTree>> is the one that applies here.
-
-==== Smwidv
-
-Dependent on Smwidd, this extension adds the `hlwid`, `hwiddeleg`, and `vslwid`
-registers, allowing the World-ID extension to support the adaptations mentioned
-in <<hypervisor>> whenever the Hypervisor extension is enabled. When the
-Hypervisor extension isn't enabled, this extension has no effect.
-
-The diagram in <<hypervisor>> is the one that applies here.
 
