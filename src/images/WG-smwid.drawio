@@ -68,12 +68,6 @@
         <mxCell id="idFu2JnuwtmRtHg6tgHR-53" value="Legend" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="380" y="90" width="150" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="Ks7p32c-WRjKvTi0UQMT-0" value="" style="shape=link;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="idFu2JnuwtmRtHg6tgHR-35" target="idFu2JnuwtmRtHg6tgHR-1" edge="1">
-          <mxGeometry width="100" relative="1" as="geometry">
-            <mxPoint x="360" y="430" as="sourcePoint" />
-            <mxPoint x="460" y="430" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
         <mxCell id="PwK8Ud1lTVJ-DON298jv-0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="idFu2JnuwtmRtHg6tgHR-4" target="idFu2JnuwtmRtHg6tgHR-8" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="270" y="410" as="sourcePoint" />
