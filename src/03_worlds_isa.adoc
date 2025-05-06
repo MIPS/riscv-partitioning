@@ -53,7 +53,7 @@ same WID.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="World-ID Smwid decision tree"]
-image::WG-smwid.drawio.svg[]
+image::WorldID-smwid.drawio.svg[]
 
 ==== Smlwid: Lower-than-M-mode WID support
 
@@ -62,7 +62,7 @@ the WID for transactions from the lower privilege levels (S and U).
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="World-ID Smlwid decision tree"]
-image::WG-smlwid.drawio.svg[]
+image::WorldID-smlwid.drawio.svg[]
 
 ==== Smwidl: Delegation to M-mode
 
@@ -80,7 +80,7 @@ configuration that;
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="World-ID Smwidl decision tree"]
-image::WG-smwidl.drawio.svg[]
+image::WorldID-smwidl.drawio.svg[]
 
 [[smwidd]]
 ==== Smwidd: User-mode and delegation to S-mode
@@ -98,7 +98,7 @@ delegation from M to S.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="World-ID Smwidd decision tree"]
-image::WG-smwidd.drawio.svg[]
+image::WorldID-smwidd.drawio.svg[]
 
 [[smwidv]]
 ==== Smwidv: Hypervisor support
@@ -126,7 +126,7 @@ this extension has no effect.)
 [[smwidvtree]]
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
 [title="World-ID Smwidv decision tree"]
-image::WG-smwidv.drawio.svg[]
+image::WorldID-smwidv.drawio.svg[]
 
 === Configuration handling
 
