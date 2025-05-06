@@ -249,10 +249,10 @@ because the former can configure constraints on the latter.
 
 This ostensible "RoT-mode" concept is vague at best, given that it could apply
 to early-boot M-mode code or to a completely external agent. Nonetheless, as we
-will see in the diagrams of <<nonHypervisorTree>> and <<hypervisor>>, the
-addition of this "higher than M-mode" privilege level allows a
-constraints-based view of the privilege levels to extend from the hart to
-beyond-the-hart - constraining M-mode in the process.
+will see in the diagrams of <<smwidd>> and <<smwidv>>, the addition of this
+"higher than M-mode" privilege level allows a constraints-based view of the
+privilege levels to extend from the hart to beyond-the-hart - constraining
+M-mode in the process.
 
 === Extensions and documentation grouping
 
