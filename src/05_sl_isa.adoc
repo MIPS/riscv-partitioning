@@ -39,7 +39,7 @@ reason:
 
 ****
 A superior SL is one with a lower value, and conversely an inferior SL is one
-with a higher value. The value of the highest SL is zero.
+with a higher value. The most secure SL is the value zero.
 ****
 
 [[slConstraints]]
