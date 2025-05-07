@@ -9,18 +9,6 @@ The original WG solution proposes a sequence of incremental extensions that
 progressively add CSR registers but do not add any new instructions. We propose
 that;
 
-* Many implementations will implement and permanently enable all the WG
-  extensions;
-** The complexity of the first WG extension is close enough to the complexity
-   of incorporating them all that we find little benefit to implementing
-   intermediary levels, even in microcontroller form-factors. Not having to
-   support intermediary levels is the principal simplification.
-** It is reasonable to have WG permanently enabled because default settings can
-   be obtained that provide behavior functionally equivalent to WG being
-   disabled.
-** As such, we will briefly define the extensions by the registers they
-   introduce, after which we will document the architecture as it exists with
-   all extensions fully implemented and enabled.
 * The publicly-available WG definition is modified;
 ** For improvement of WG;
 *** Addition of `mwid` and `mwidlist` CSRs and their respective
@@ -35,6 +23,9 @@ that;
 ** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`,
    `vslwid` and associated behaviors.
 * Some of the WG CSRs be exposed for external control.
+* We will briefly define the extensions by the registers they introduce, after
+  which we will document the architecture as it exists with all extensions
+  fully implemented and enabled.
 
 [[extensions]]
 === Extensions
