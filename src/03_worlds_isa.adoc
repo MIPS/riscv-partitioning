@@ -282,22 +282,22 @@ logic also determines the WID value with which to tag the outgoing transaction.
 
 ==== Effective WID
 
-The WID of each privilege mode is determined by the World-ID registers in the
-following manner, depending on how many World-ID extensions are enabled;
+The WID of each privilege mode is determined by the World-ID registers per the
+following table, based on how many World-ID extensions are enabled (they are
+enabled successively, from left-to-right). Note that the Smwidd extension does
+not add any WID registers and so presents the same characteristics as Smwidl.
 
-[%header,cols="1,1,1,1,1,1"]
+[%header,cols="1,1,2,1,2"]
 |===
-^| Mode ^| Smwid  ^| Smlwid  ^| Smwidd  ^| Smwidv   ^| All enabled
-^| M    ^| `mwid` ^|         ^|         ^|          ^| `mwid`
-^| HS/S ^| `mwid` ^| `mlwid` ^|         ^|          ^| `mlwid`
-^| VS   ^| `mwid` ^| `mlwid` ^|         ^| `hlwid`  ^| `hlwid`
-^| HU/U ^| `mwid` ^| `mlwid` ^| `slwid` ^|          ^| `slwid`
-^| VU   ^| `mwid` ^| `mlwid` ^| `slwid` ^| `vslwid` ^| `vslwid`
+^| Mode ^| Smwid  ^| Smwidl, Smwidd ^| Smwids  ^| Smwidv (all enabled)
+^| M    ^| `mwid` ^| `mwid`         ^| `mwid`  ^| `mwid`
+^| HS/S ^| `mwid` ^| `mlwid`        ^| `mlwid` ^| `mlwid`
+^| VS   ^| `mwid` ^| `mlwid`        ^| `mlwid` ^| `hlwid`
+^| HU/U ^| `mwid` ^| `mlwid`        ^| `slwid` ^| `slwid`
+^| VU   ^| `mwid` ^| `mlwid`        ^| `slwid` ^| `vslwid`
 |===
 
 * The "effective WID" is the WID of the current privilege mode.
-* The Smwidl extension is not mentioned in the above table as it does
-  not introduce any new WID registers.
 
 ==== Accept/reject
 
