@@ -132,11 +132,12 @@ a way that it can't subsequently reconfigure (without a reset).
 
 There is no need to adjust ePMP for WID isolation behavior, but there is a need
 to enhance it to support SQ-enforcement behavior.  __Specifically, ePMP will
-need to be cognizant of the hart's effective security level (the SL of outgoing
-transactions) in order to prevent the hart from accessing a resource whose SQ
-is restricted to superior SLs. ePMP may also be responsible for recording
-(through `pmpsqX` register settings) the SQ of physical address ranges,
-depending on how the platform manages such attributes.__
+need to be cognizant of (i) the hart's effective security level (the SL of
+outgoing transactions), and (ii) the target resource's SQ, in order to prevent
+the hart from accessing a resource that is restricted to superior SLs. ePMP may
+also be responsible for recording (through `pmpsqX` register settings) the SQ
+of physical address ranges, depending on how the platform manages such
+attributes (and on whether the Smwidsq extension is enabled).__
 
 === IOPMP
 
@@ -205,9 +206,9 @@ be exposed for external control.__
 
 ePMP also contributes to the system partitioning, through the ability to write
 (and lock) rules that govern even M-mode's access to the hart's addressable
-resources. On some platforms, the `pmpsqX` registers may also be the way in
-which physical address ranges are assigned their SQ attributes. __The ePMP
-registers should be exposed for external control.__
+resources. On some platforms (when Smwidsq is enabled), the `pmpsqX` registers
+may also be the way in which physical address ranges are assigned their SQ
+attributes. __The ePMP registers should be exposed for external control.__
 
 ==== eIOPMP
 
@@ -254,10 +255,10 @@ This ostensible "RoT-mode" concept is intentionally vague, it applies equally
 to early-boot M-mode code and/or to a completely external agent. But that has
 value in itself, as it is precisely the comparison one makes when one compares
 a system that boots itself with a subsystem that is booted by a parent system.
-As we will see in the diagrams of <<smwidd>> and <<smwidv>>, the addition of
-this "higher than M-mode" privilege level allows a constraints-based view of
-the privilege levels to emerge that extends from U-mode through M-mode to
-beyond-the-hart. Constraining M-mode is the desired side-effect.
+As we will see in the diagrams of <<extensions>>, the addition of this "higher
+than M-mode" privilege level allows a constraints-based view of the privilege
+levels to emerge that extends from U-mode through M-mode to beyond-the-hart.
+Constraining M-mode is the desired side-effect.
 
 === Extensions and documentation grouping
 
