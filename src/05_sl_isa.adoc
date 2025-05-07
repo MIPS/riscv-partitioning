@@ -6,27 +6,20 @@
 === Preamble
 
 * The World-ID extension set is augmented;
-** Addition of `mwidseclist` and its behavior. (See "Security Level definition"
-   below in <<mwidseclist>>.)
-** Enforcement of sane relationships between the Security Levels of the (WIDs
-   associated with the) 3 hart privilege levels. (See "Security Level
-   constraints" below in <<slConstraints>>).
+** The Swidsl extension - addition of `mwidseclist` and its behavior. (See
+   <<smwidsl>>.)
+** The Swidslc extension - enforcement of sane relationships between the
+   Security Levels of the (WIDs associated with the) 3 hart privilege levels.
+   (See <<smwidslc>>).
 
-[[mwidseclist]]
 === Security Level definition
 
 ==== `NLevels`
 
 There are `NLevels` distinct security levels available to the SoC, which has an
 upper-limit of 16 (thus requiring at most 4-bits to encode a security level).
-The Security Levels extension adds the `mwidseclist0`-`mwidseclist3` CSRs,
-which pack 4 bits of Security Level per WID, for up to `XLEN` WIDs.
-
-==== Locking
-
-It is important to note that the `mwidseclistX` CSRs are lockable, they are
-locked conjointly with `mwid` and `mwidlist` whenever the former's `L` bit is
-set. See <<lockablePartitioning>> for more detail.
+The Swidsl extension adds the `mwidseclist0`-`mwidseclist3` CSRs, which pack 4
+bits of Security Level per WID, for up to `XLEN` WIDs.
 
 ==== Values
 
@@ -42,8 +35,47 @@ A superior SL is one with a lower value, and conversely an inferior SL is one
 with a higher value. The most secure SL is the value zero.
 ****
 
-[[slConstraints]]
-=== Security Level constraints
+[[smwidsl]]
+=== Smwidsl - Security Level assignments and signalling
+
+This extension is dependent on Smwid.
+
+==== `mwidseclistX`
+
+The `mwidseclistX` registers are defined in <<slRegisterMap>>, and provide a
+means for associating each WID with a corresponding SL. Whether all harts (and
+other initiators) in a given system should be maintained with identical WID/SL
+associations is beyond the scope of this document, though we can safely say
+that a multi-hart system is likely to do so.
+
+==== Locking
+
+It is important to note that the `mwidseclistX` CSRs are lockable, they are
+locked conjointly with `mwid` and `mwidlist` whenever the former's `L` bit is
+set. See <<lockablePartitioning>> for more detail.
+
+==== Signaling
+
+The World-ID extensions have already created a new "WID" field that can be
+signalled on outgoing transactions, this may possibly be encoded in AxNSAID on
+AXI5. By enabling the Swidsl extension, another new field, "SL", is created
+that can be signalled on outgoing transactions. That is, the `mwidseclistX`
+registers establish a SL value for each WID, so that given the effective WID 
+we can determine the effective SL.
+
+Whether these fields are used and how they are encoded depends on bus protocols
+and integration choices.
+
+To interact with a TrustZone(R) targets, the Boolean "NS" concept is signalled
+in the AxPROT[1] bit on AXI protocols. The natural way to map down from
+`NLevels` to 2, when mapping from SL to NS, is to treat a zero SL as NS=0
+(Secure) and treat all non-zero SLs as NS==1 (Non-Secure).
+
+[[smwidslc]]
+=== Smwidslc - Security Level privilege constraints
+
+This extension is dependent on Smwidsl. For it to have any use, it would make
+sense for at least Smlwid to be required also.
 
 A run-time privilege constraint is defined that mimics the behavior expected of
 TEE-like software models, namely a lower privilege level cannot be more secure
@@ -57,25 +89,15 @@ the privilege levels above it. In RISC-V terms, and bearing in mind that a
     SecurityLevel(VS-mode) <= SecurityLevel(VU-mode)
 ....
 
-=== Decision logic
-
-The following subsections show the additional constraints for determining
-whether to accept or reject a load/store/fetch transaction. See
+The following list shows the process for determining whether to accept or
+reject a load/store/fetch transaction with the Swidslc extension enabled. See
 <<decisionLogic>> for more information on how rejections are handled.
-
-==== Effective Security Level
 
 * The security level of a privilege mode is determined by using that privilege
   level's WID as an index into the `mwidseclistX` registers. Zero is an
   appropriate default for parts that require no Security Level support.
 * The "effective security level" is the security level of the current privilege
   level.
-
-==== Privilege constraints
-
-These checks implement the "run-time privilege constraint" described in
-<<slConstraints>>.
-
 * If the hart is in (H)S-mode and the security level of (H)S-mode is superior
   to the security level of M-mode, reject transaction.
 * If the hart is in VS-mode and the security level of VS-mode is superior to

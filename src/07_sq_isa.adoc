@@ -15,7 +15,11 @@
   (See "Changing Security Level" below in <<changingSecurityLevel>>.)
 
 [[sq]]
-=== Security Qualifier
+=== Smwidsq - Security Qualifiers
+
+This extension depends on Smwidsl.
+
+==== Definition of a Security Qualifier
 
 When access to a resource is protected by a Security Qualifier, the qualifier
 has three fields that are used to treat potential transactions;
@@ -35,7 +39,7 @@ The use of Treatment/Value is to handle cases where a downstream checker will be
 encountered by the outgoing transaction, and where all hart accesses to that
 resource (that aren't rejected) should signal at a common Security Level.
 
-=== Instruction fetch and table walk
+==== Instruction fetch and table walk
 
 It is dangerous to trust instructions or page table entries that are fetched
 from memory that is accessible to inferior (higher-valued) security levels. So,
@@ -44,14 +48,8 @@ comparison between the effective Security Level and the Security Qualifier's
 Threshold field becomes one of "equality" (rather than "superior or equal to"
 as is normally the case).
 
-=== Decision logic
-
-The following subsections show the additional constraints for determining
-whether to accept or reject a load/store/fetch transaction. See
-<<decisionLogic>> for more information on how rejections are handled.
-
 [[sqPMP]]
-==== Security Qualifier accept/reject
+==== Decision logic
 
 Per the description of Security Qualifiers above, the hart (probably in the
 ePMP) uses the following additional constraint logic to determine the fate of a
@@ -67,7 +65,7 @@ potential load/store/fetch transaction;
   Security Level or the Security Qualifier's "Value" field.
 
 [[changingSecurityLevel]]
-=== Changing Security Level
+=== Changing Security Level at run-time
 
 If the intention is for M-mode to modify the Security Level of its own WID,
 there is a subtlety to note about modifications to the `mwid` and
