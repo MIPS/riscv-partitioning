@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename "WorldGuard" to "RISC-V Worlds" for the system concept and "World-ID" for the ISA
 - Generalize "TrustZone" NS-Req (Secure/Non-Secure) to "RISC-V Security Levels" (or "SL")
 - Generalize "TrustZone" NS-Attr (2-bits) to "RISC-V Security Qualifiers" (or "SQ")
+- Rework the proposal into 4 sub-proposals, in a layered manner
+- Break the World-ID ISA (and Security Layer ISA) into smaller extensions
+- Discuss "RoT-mode"
 
 ## [0.6.4] - 2025-04-17
 - Reusable build system (used by sPMP too)
