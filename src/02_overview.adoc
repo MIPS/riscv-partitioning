@@ -310,3 +310,19 @@ separable a manner as possible.
    physical address space, as an alternative to any other platform-specific
    mechanism for recording SQs.
 
+An per-sub-proposal overview of the ISA extensions follows;
+
+[cols="2,1,3"]
+|===
+| *Sub-proposal* | *Ext name* | *Content*
+.5+| World-ID baseline | Smwid | Hart-specific WID
+                       | Smwidl | Lower-than-M-mode WID
+                       | Smwidm | Delegation to M-mode
+                       | Smwids | User-mode and delegation to S-mode
+                       | Smwidv | Hypervisor support
+.2+| Security Levels | Smwidsl | Security Level assignments and signalling
+                     | Smwidslc | Security Level privilege constraints
+| Security Qualifiers | Smwidsq | Security Qualifier transaction checking
+| ePMP Security Qualifiers | TBD | ePMP registration of Security Qualifiers
+|===
+

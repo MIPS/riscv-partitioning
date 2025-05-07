@@ -55,18 +55,18 @@ same WID.
 [title="World-ID Smwid decision tree"]
 image::WorldID-smwid.drawio.svg[]
 
-==== Smlwid: Lower-than-M-mode WID support
+==== Smwidl: Lower-than-M-mode WID support
 
 Dependent on Smwid, this extension creates the `mlwid` register that specifies
 the WID for transactions from the lower privilege levels (S and U).
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smlwid decision tree"]
-image::WorldID-smlwid.drawio.svg[]
+[title="World-ID Smwidl decision tree"]
+image::WorldID-smwidl.drawio.svg[]
 
-==== Smwidl: Delegation to M-mode
+==== Smwidm: Delegation to M-mode
 
-Dependent on Smlwid, this extension creates the `mwidlist` register that is
+Dependent on Smwidl, this extension creates the `mwidlist` register that is
 implicitly locked whenever `mwid` is, and which acts as a bitmask to authorize
 the WID values that `mlwid` can successfully issue transactions for (i.e.
 without being faulted). This functionality allows M-mode to be locked into a
@@ -79,11 +79,11 @@ configuration that;
   transactions if the corresponding bit in `mwidlist` isn't asserted.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smwidl decision tree"]
-image::WorldID-smwidl.drawio.svg[]
+[title="World-ID Smwidm decision tree"]
+image::WorldID-smwidm.drawio.svg[]
 
-[[smwidd]]
-==== Smwidd: User-mode and delegation to S-mode
+[[smwids]]
+==== Smwids: User-mode and delegation to S-mode
 
 Dependent on Smwidl, this extension creates the `mwiddeleg` and `slwid`
 registers, allowing M-mode to delegate to S-mode the capability of setting WIDs
@@ -97,8 +97,8 @@ WIDs that S-mode can (successfully) assign to U-mode. I.e. constrained
 delegation from M to S.
 
 [caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smwidd decision tree"]
-image::WorldID-smwidd.drawio.svg[]
+[title="World-ID Smwids decision tree"]
+image::WorldID-smwids.drawio.svg[]
 
 [[smwidv]]
 ==== Smwidv: Hypervisor support
@@ -108,7 +108,7 @@ the behavior of `S` and `U` modes. When `V=0`, `S` and `U` mode are referred to
 as `HS` and `HU` respectively (here `H` represents "Host" or "Hypervisor",
 either will do). When `V=1`, they are referred to as `VS` and `VU`
 respectively. (`V` represents "Virtual".) When the Hypervisor extension is
-enabled, the behavior defined in <<smwidd>> for `S` and `U` is also the
+enabled, the behavior defined in <<smwids>> for `S` and `U` is also the
 expected behavior for the `V=0` case, i.e. for `HS` and `HU`.
 
 What remains is to define the expected behavior for the `VS` and `VU` states,
@@ -118,7 +118,7 @@ register called `vslwid`. These extend the existing WID and WID-delegation
 concepts to the additional level of privilege hierarchy that the H extension
 introduces.
 
-Dependent on Smwidd, this extension adds the `hlwid`, `hwiddeleg`, and `vslwid`
+Dependent on Smwids, this extension adds the `hlwid`, `hwiddeleg`, and `vslwid`
 registers, that provide the adaptations illustrated below whenever the
 Hypervisor extension is enabled. (When the Hypervisor extension isn't enabled,
 this extension has no effect.)
