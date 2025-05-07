@@ -19,7 +19,7 @@
         <mxCell id="idFu2JnuwtmRtHg6tgHR-7" value="set in&lt;br&gt;mwidlist?" style="rhombus;whiteSpace=wrap;html=1;shadow=0;fontFamily=Helvetica;fontSize=12;align=center;strokeWidth=1;spacing=6;spacingTop=-4;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="210" y="200" width="100" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="idFu2JnuwtmRtHg6tgHR-8" value="Accept" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;sketch=1;curveFitting=1;jiggle=2;fontStyle=2" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+        <mxCell id="idFu2JnuwtmRtHg6tgHR-8" value="Emit" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;sketch=1;curveFitting=1;jiggle=2;fontStyle=2" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="130" y="300" width="60" height="40" as="geometry" />
         </mxCell>
         <mxCell id="idFu2JnuwtmRtHg6tgHR-10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="idFu2JnuwtmRtHg6tgHR-7" target="idFu2JnuwtmRtHg6tgHR-8" edge="1">
@@ -43,7 +43,7 @@
             <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="idFu2JnuwtmRtHg6tgHR-18" value="Reject" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;sketch=1;curveFitting=1;jiggle=2;fillColor=default;fontStyle=2" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+        <mxCell id="idFu2JnuwtmRtHg6tgHR-18" value="Fault" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;sketch=1;curveFitting=1;jiggle=2;fillColor=default;fontStyle=2" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="300" y="300" width="60" height="40" as="geometry" />
         </mxCell>
         <mxCell id="idFu2JnuwtmRtHg6tgHR-19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="idFu2JnuwtmRtHg6tgHR-7" target="idFu2JnuwtmRtHg6tgHR-18" edge="1">
@@ -144,7 +144,7 @@
         <mxCell id="idFu2JnuwtmRtHg6tgHR-51" value="WID lookup in mask" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="460" y="170" width="130" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="idFu2JnuwtmRtHg6tgHR-52" value="Result" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+        <mxCell id="idFu2JnuwtmRtHg6tgHR-52" value="Transaction result" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="460" y="190" width="130" height="20" as="geometry" />
         </mxCell>
         <mxCell id="idFu2JnuwtmRtHg6tgHR-53" value="Legend" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
