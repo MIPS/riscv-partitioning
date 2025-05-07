@@ -281,8 +281,8 @@ separable a manner as possible.
    WID namespace to an output WID namespace.
 * "Security Levels"
 ** The "Security Levels" ISA extension. This allows World IDs to be classified
-   according to gradations of SL. It also enforces sane relationships between
-   the SLs of the hart's 3 privilege levels.
+   by SL. It also enforces sane relationships between the SLs of the hart's 3
+   privilege levels.
 ** The "eIOPMP Security Levels" non-ISA extension. This is to the eIOPMP what
    the "Security Levels" ISA extension is to the hart, it classifies the
    available World IDs into their respective SLs, which is useful if the eIOPMP
@@ -312,7 +312,7 @@ separable a manner as possible.
 
 An per-sub-proposal overview of the ISA extensions follows;
 
-[cols="2,1,3"]
+[%header,cols="2,1,3"]
 |===
 | *Sub-proposal* | *Ext name* | *Content*
 .5+| World-ID baseline | Smwid | Hart-specific WID

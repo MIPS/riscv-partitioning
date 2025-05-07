@@ -287,12 +287,12 @@ following manner, depending on how many World-ID extensions are enabled;
 
 [%header,cols="1,1,1,1,1,1"]
 |===
-| Mode | Smwid  | Smlwid  | Smwidd  | Smwidv   | All enabled
-| M    | `mwid` |         |         |          | `mwid`
-| HS/S | `mwid` | `mlwid` |         |          | `mlwid`
-| VS   | `mwid` | `mlwid` |         | `hlwid`  | `hlwid`
-| HU/U | `mwid` | `mlwid` | `slwid` |          | `slwid`
-| VU   | `mwid` | `mlwid` | `slwid` | `vslwid` | `vslwid`
+^| Mode ^| Smwid  ^| Smlwid  ^| Smwidd  ^| Smwidv   ^| All enabled
+^| M    ^| `mwid` ^|         ^|         ^|          ^| `mwid`
+^| HS/S ^| `mwid` ^| `mlwid` ^|         ^|          ^| `mlwid`
+^| VS   ^| `mwid` ^| `mlwid` ^|         ^| `hlwid`  ^| `hlwid`
+^| HU/U ^| `mwid` ^| `mlwid` ^| `slwid` ^|          ^| `slwid`
+^| VU   ^| `mwid` ^| `mlwid` ^| `slwid` ^| `vslwid` ^| `vslwid`
 |===
 
 * The "effective WID" is the WID of the current privilege mode.
