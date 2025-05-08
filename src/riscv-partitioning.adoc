@@ -3,7 +3,7 @@
 :description: :description: Secure system partitioning with RISC-V Worlds and Security Levels
 :company: RISC-V.org
 :revdate: 5/2025
-:revnumber: 0.7.0
+:revnumber: 0.7.1-dev
 :revremark: This document is under development. Expect changes.
 :revinfo:
 :url-riscv: http://riscv.org
