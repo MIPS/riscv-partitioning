@@ -11,3 +11,8 @@ reduce the number of registers involved in a context-switch.
 TBD: once the register definition settles down, solicit ideas for this and
 judge their cost-benefit.
 
+=== Requirements
+
+This document is so far mostly concerned with the solution, it should say more
+about the problems it solves.
+
