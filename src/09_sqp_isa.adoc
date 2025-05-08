@@ -1,7 +1,7 @@
 :imagesdir: ./images
 
 [[sqepmpISA]]
-== "ePMP Security Qualifiers" ISA extension
+== "ePMP Security Qualifier registry" ISA extension
 
 === Preamble
 

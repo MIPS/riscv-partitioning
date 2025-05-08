@@ -117,9 +117,9 @@ necessarily equal or inferior to the former, to inhibit privilege-escalation.)
 One subtlety to note about SQs is with respect to instruction fetching and, if
 an MMU is present, page-table fetches. A workload shouldn't fetch instructions
 (nor should it load page-tables) from an address range that is accessible to
-inferior SLs, to close the obvious attack vectors that can result. So the
-normal "greater than or equal" comparison between SL (the hart) and SQ (the
-resource) will be an equality comparison for those classes of transactions.
+inferior SLs, to close the attack vectors that could otherwise result. As such,
+for those classes of transactions, the "superior or equal" comparison between
+SL (the hart) and SQ (the resource) is replaced with an equality comparison.
 
 === ePMP
 
@@ -300,20 +300,20 @@ separable a manner as possible.
    what the "Security Qualifiers" extension is to the hart, it introduces the
    SQ concept to the eIOPMP, implying that it will perform enforcement of SQs
    on all input transactions before forwarding (or rejecting) them.
-* "Security Qualifiers PMP tracking".
-** The "Security Qualifiers for ePMP" ISA extension. This extension advertises
-   that the ePMP manages the SQs for the hart's accessible physical address
-   space, as an alternative to any other platform-specific mechanism for
-   recording SQs.
-** The "eIOPMP Security Qualifiers for eIOPMP" non-ISA extension. This is to
-   the eIOPMP what the "Security Qualifiers for ePMP" extension is to the hart,
-   it advertises that the eIOPMP manages the SQs for the eIOPMP's accessible
+* "PMP registration of Security Qualifiers".
+** The "ePMP Security Qualifier registry" ISA extension. This extension
+   advertises that the ePMP manages the SQs for the hart's accessible physical
+   address space, as an alternative to any other platform-specific mechanism
+   for recording SQs.
+** The "eIOPMP Security Qualifier registry" non-ISA extension. This is to the
+   eIOPMP what the "Security Qualifiers for ePMP" extension is to the hart, it
+   advertises that the eIOPMP manages the SQs for the eIOPMP's accessible
    physical address space, as an alternative to any other platform-specific
    mechanism for recording SQs.
 
-An per-sub-proposal overview of the ISA extensions follows;
+Here is an overview of the ISA extensions covered in this document;
 
-[%header,cols="2,1,3"]
+[%header,cols="3,1,3"]
 |===
 | *Sub-proposal* | *Ext name* | *Content*
 .5+| World-ID baseline | Smwid | Hart-specific WID
@@ -324,6 +324,6 @@ An per-sub-proposal overview of the ISA extensions follows;
 .2+| Security Levels | Smwidsl | Security Level assignments and signalling
                      | Smwidslc | Security Level privilege constraints
 | Security Qualifiers | Smwidsq | Security Qualifier transaction checking
-| ePMP Security Qualifiers | TBD | ePMP registration of Security Qualifiers
+| PMP registration of Security Qualifiers | TBD | ePMP registration of Security Qualifiers
 |===
 

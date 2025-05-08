@@ -165,9 +165,6 @@ need to be conveyed to it through software mechanisms.
 * Apart from the "L"ock bit in `mwid` (which is sticky to 1 and renders both
   registers read-only until the next reset), these registers are modifiable
   independently and no combination of values is illegal, _per se_.
-* These partitioning registers place no constraints on the order in which
-  they're read or written. (This simplifies the hardware design and resulting
-  programming model.)
 
 [[runtimeManipulable]]
 ==== Run-time manipulable registers
@@ -179,22 +176,22 @@ need to be conveyed to it through software mechanisms.
   CSRs also. These CSRs are not lockable and are not exported for external
   configuration, and so they are not considered part of the partitioning
   configuration (rather, they work within the partitioning configuration).
-* `mlwid`: this register determines the effective WID of (H)S-mode. Though it
-  makes sense for the corresponding bit in `mwidlist` to be set, there is no
-  need to enforce such relationships at the register level, the catastrophic
-  effects of this kind of misconfiguration will take care of matters. (Loads,
-  stores, and instruction fetches will be blocked for S-mode.)
+* `mlwid`: this register determines the effective WID of (H)S-mode if the
+  Smwids extension is enabled, otherwise it determines the effective WID of all
+  S and U modes. Though it makes sense for the corresponding bit in `mwidlist`
+  to be set, there is no need to enforce such relationships at the register
+  level, the effects of a misconfiguration will take care of themselves.
+  (Loads, stores, and instruction fetches for S-mode and U-mode will fault.)
 * `hlwid`: this register determines the effective WID of VS-mode. It makes sense
-  for the corresponding bits in `mwidlist` and `mwiddeleg` to be set, but there
-  is no need to enforce such a relationship at the register level.
+  for the corresponding bits in `mwidlist` and `mwiddeleg` to be set, otherwise
+  VS-mode transactions will fault.
 * `slwid`: this register determines the effective WID of U-mode. It makes sense
-  for the corresponding bits to be set in `mwidlist` and `mwiddeleg`, but there
-  is no need to enforce such relationships at the register level.
+  for the corresponding bits to be set in `mwidlist` and `mwiddeleg`, otherwise
+  U-mode transactions will fault.
 * `vslwid`: This CSR is the virtualization shadow register of the slwid
-   register. In HS-mode this register can be programmed to set the effective WID
-   of VU mode. It makes sense for the corresponding bits in `hwiddeleg` to be
-   set, but there is no need to enforce such a relationship at the register
-   level.
+   register. In HS-mode this register can be programmed to set the effective
+   WID of VU mode. It makes sense for the corresponding bits in `hwiddeleg` to
+   be set.
 * `mwiddeleg`: this register determines the WIDs that (H)S-mode is allowed to
   assign to U-mode (and, if the Hypervisor extension is enabled, VS-mode), i.e.
   those WIDs that can (or should) be set in `slwid` (and `hlwid`). It makes

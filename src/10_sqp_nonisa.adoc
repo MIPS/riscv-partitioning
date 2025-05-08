@@ -1,7 +1,7 @@
 :imagesdir: ./images
 
 [[sqeiopmpNonISA]]
-== "eIOPMP Security Qualifiers" non-ISA extension
+== "eIOPMP Security Qualifier registry" non-ISA extension
 
 === Preamble
 

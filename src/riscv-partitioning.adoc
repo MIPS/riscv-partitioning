@@ -81,9 +81,9 @@ instructions executing at that privilege level.
 This section of the document covers;
 
 * <<isa>>, the "World-ID" ISA extension set. This is derived from the original
-  WorldGuard v0.4 proposal from SiFive and by making some tweaks and adding
-  support for the Hypervisor extension. It provides support for World-based
-  marking of core-initiated transactions.
+  WorldGuard v0.4 proposal from SiFive by making some tweaks and adding support
+  for the Hypervisor extension. It provides support for World-based marking of
+  core-initiated transactions.
 * <<eiopmp>>, the "eIOPMP extension". This is derived from the v0.7 of the
   draft IOPMP specification by making some tweaks and clarifications, as well
   as adding support for match-based output WID/RRID. I.e. an eIOPMP that can

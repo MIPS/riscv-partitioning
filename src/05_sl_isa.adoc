@@ -43,44 +43,45 @@ This extension is dependent on Smwid.
 ==== `mwidseclistX`
 
 The `mwidseclistX` registers are defined in <<slRegisterMap>>, and provide a
-means for associating each WID with a corresponding SL. Whether all harts (and
-other initiators) in a given system should be maintained with identical WID/SL
-associations is beyond the scope of this document, though we can safely say
-that a multi-hart system is likely to do so.
+means for associating each WID with a corresponding SL.
+
+Whether all harts (and other initiators) in a given system should have the same
+WID/SL associations is beyond the scope of this document, though it is
+certainly natural for WID/SL associations to be consistent.
 
 ==== Locking
 
 It is important to note that the `mwidseclistX` CSRs are lockable, they are
-locked conjointly with `mwid` and `mwidlist` whenever the former's `L` bit is
-set. See <<lockablePartitioning>> for more detail.
+locked conjointly with `mwid` and `mwidlist` whenever `mwid`'s `L` bit is set.
+See <<lockablePartitioning>> for more detail.
 
 ==== Signaling
 
 The World-ID extensions have already created a new "WID" field that can be
 signalled on outgoing transactions, this may possibly be encoded in AxNSAID on
-AXI5. By enabling the Swidsl extension, another new field, "SL", is created
+AXI5. By enabling the Smwidsl extension, another new field, "SL", is created
 that can be signalled on outgoing transactions. That is, the `mwidseclistX`
-registers establish a SL value for each WID, so that given the effective WID 
-we can determine the effective SL.
+registers establish a SL value for each WID, so we can determine the effective
+SL from the effective WID.
 
 Whether these fields are used and how they are encoded depends on bus protocols
 and integration choices.
 
-To interact with a TrustZone(R) targets, the Boolean "NS" concept is signalled
-in the AxPROT[1] bit on AXI protocols. The natural way to map down from
-`NLevels` to 2, when mapping from SL to NS, is to treat a zero SL as NS=0
-(Secure) and treat all non-zero SLs as NS==1 (Non-Secure).
+To interact with TrustZone(R) targets, the Boolean "NS" concept is signalled in
+the AxPROT[1] bit on AXI protocols. The natural way to map down from `NLevels`
+to 2, when mapping from SL to NS, is to treat a zero SL as NS=0 (Secure) and
+treat all non-zero SLs as NS==1 (Non-Secure).
 
 [[smwidslc]]
 === Smwidslc - Security Level privilege constraints
 
-This extension is dependent on Smwidsl. For it to have any use, it would make
-sense for at least Smlwid to be required also.
+This extension is dependent on Smwidsl. For it to have any use, it makes sense
+for at least Smwidl to be enabled.
 
 A run-time privilege constraint is defined that mimics the behavior expected of
 TEE-like software models, namely a lower privilege level cannot be more secure
-the privilege levels above it. In RISC-V terms, and bearing in mind that a
-'higher privilege level' corresponds to a lower SL _value_;
+the privilege levels above it. In RISC-V terms, and bearing in mind that 'more
+secure' corresponds to a lower SL _value_;
 
 ....
     SecurityLevel(M-mode) <= SecurityLevel(HS-mode)
