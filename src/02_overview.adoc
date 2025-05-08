@@ -110,12 +110,14 @@ TrustZone(R)-enabled interconnect by identifying `SL==0` with "Secure", and
 [[introSecurityQualifiers]]
 === Security Qualifiers
 
-A Security Qualifier (hereafter "SQ") consists of a pair of SL values and
-represents the access-control information for a given resource (physical
-address range). The first of the two values indicates the lowest SL that is
-permitted access to the resource, and the latter value indicates the SL that
-the transaction should be tagged with if accepted. (The latter value is
-necessarily equal or inferior to the former, to inhibit privilege-escalation.)
+A Security Qualifier (hereafter "SQ") consists of a pair of SL fields and a
+boolean field, and it represents the access-control information for a given
+resource (physical address range). The first of the two SL fields indicates the
+lowest SL that is permitted access to the resource, the boolean indicates
+whether the caller's SL should be propagated or whether a qualifier-specific
+SL value should be used if the transaction is accepted, and the second SL field
+is that qualifier-specific value. (The latter SL field is necessarily equal or
+inferior to the former, to inhibit privilege-escalation.)
 
 One subtlety to note about SQs is with respect to instruction fetching and, if
 an MMU is present, page-table fetches. A workload shouldn't fetch instructions
