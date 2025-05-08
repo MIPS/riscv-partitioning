@@ -5,6 +5,8 @@
 |===
 
 | Term(s) | Description
+| PMP | Physical Memory Protection, e.g. ePMP (enhanced PMP) and sPMP (S-mode
+        PMP) are ISA extensions, whereas IOPMP is a non-ISA gasket definition.
 | SL | Security Level, see <<introSecurityLevels>>.
 | SQ | Security Qualifier, see <<introSecurityQualifiers>>.
 | TCB/TCG | Trusted Computing Base/Group, see https://trustedcomputinggroup.org.
