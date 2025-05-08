@@ -2,8 +2,8 @@
 :docgroup: RISC-V Task Group
 :description: :description: Secure system partitioning with RISC-V Worlds and Security Levels
 :company: RISC-V.org
-:revdate: 4/2025
-:revnumber: 0.7.0-dev
+:revdate: 5/2025
+:revnumber: 0.7.0
 :revremark: This document is under development. Expect changes.
 :revinfo:
 :url-riscv: http://riscv.org
