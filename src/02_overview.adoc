@@ -90,11 +90,13 @@ The ISA implementation has a corresponding, and software-discoverable,
 `NWorlds` configuration constant, representing the maximum number of distinct
 Worlds supported by the ISA functionality.
 
+[[introSecurityLevels]]
 === Security Levels
 
 Security Levels (hereafter "SL") is a scale that the system can assign to
-Worlds in order to define a security stratification (of up to `NLevels`). The
-TrustZone(R) model is equivalent to the `NLevels==2` case.
+Worlds in order to define a security stratification (of up to `NLevels`, a
+software-discoverable constant). The TrustZone(R) model is equivalent to the
+`NLevels==2` case.
 
 There is an extension for the hart to enforce/police the expected SL
 relationships between the hart's privilege levels. This ensures that the SL for
@@ -105,6 +107,7 @@ Note that, even if `NLevels` is greater than two, one could interoperate with a
 TrustZone(R)-enabled interconnect by identifying `SL==0` with "Secure", and
 `SL!=0` with "Non-Secure", and signaling the "NS bit" accordingly.
 
+[[introSecurityQualifiers]]
 === Security Qualifiers
 
 A Security Qualifier (hereafter "SQ") consists of a pair of SL values and
@@ -256,9 +259,9 @@ to early-boot M-mode code and/or to a completely external agent. But that has
 value in itself, as it is precisely the comparison one makes when one compares
 a system that boots itself with a subsystem that is booted by a parent system.
 As we will see in the diagrams of <<extensions>>, the addition of this "higher
-than M-mode" privilege level allows a constraints-based view of the privilege
-levels to emerge that extends from U-mode through M-mode to beyond-the-hart.
-Constraining M-mode is the desired side-effect.
+than M-mode" privilege level allows a constraints-based view to emerge that
+extends from U-mode through M-mode to beyond-the-hart. Constraining M-mode is
+the desired side-effect.
 
 === Extensions and documentation grouping
 

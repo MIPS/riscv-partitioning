@@ -27,7 +27,7 @@ With `NLevels` being configurable, the range of SLs will vary from `0` to
 `NLevels-1`. For improved generality, we will assume that an SL of `0` is the
 highest security level, down to `NLevels-1` being the lowest. We have carefully
 used words such as 'superior' and 'inferior' when referring to SLs, precisely
-so that we avoid using words such as 'greater' or 'lower', here then is the
+so that we avoid using words such as 'higher' or 'lower', here then is the
 reason:
 
 ****
@@ -52,8 +52,8 @@ certainly natural for WID/SL associations to be consistent.
 ==== Locking
 
 It is important to note that the `mwidseclistX` CSRs are lockable, they are
-locked conjointly with `mwid` and `mwidlist` whenever `mwid`'s `L` bit is set.
-See <<lockablePartitioning>> for more detail.
+locked conjointly with `mwid` and `mwidlist` whenever `mwid` has its `L` bit
+set. See <<lockablePartitioning>> for more detail.
 
 ==== Signaling
 
