@@ -250,20 +250,26 @@ We have argued that the ability to perform lockable configuration from outside
 the (sub)system should be equivalent to the ability to perform lockable
 configuration from M-mode within the (sub)system. If we ignore any distinction
 between the two and consider them as the same logical entity - then we could
-say that this entity has the privilege to set lockable configuration, after
+note that this entity has the privilege to set lockable configuration, after
 which the configuration cannot be altered by run-time M-mode, which is
-constrained by its effects. With this view, one can talk about a metaphorical
-"RoT-mode" that is more highly privileged than "run-time M-mode", because the
-former can configure constraints on the latter.
+constrained by its effects. If one considers that observation, one can talk
+about a metaphorical "RoT-mode" that is more highly privileged than "run-time
+M-mode", because the former can configure constraints on the latter.
 
-This ostensible "RoT-mode" concept is intentionally vague, it applies equally
-to early-boot M-mode code and/or to a completely external agent. But that has
-value in itself, as it is precisely the comparison one makes when one compares
-a system that boots itself with a subsystem that is booted by a parent system.
-As we will see in the diagrams of <<extensions>>, the addition of this "higher
-than M-mode" privilege level allows a constraints-based view to emerge that
-extends from U-mode through M-mode to beyond-the-hart. Constraining M-mode is
-the desired side-effect.
+This ostensible "RoT-mode" concept is usefully vague, it applies equally to
+early-boot M-mode code and/or to a completely external agent. But that has
+value in itself, as that is the comparison between (a) a system that boots
+itself, with (b) a subsystem that is booted by a parent system.  As we will see
+in the diagrams of <<extensions>>, the addition of this "RoT-mode" psuedo
+privilege level allows a constraints-based visualization to emerge, it extends
+from U-mode through M-mode to beyond-the-hart. Constraining M-mode is the
+desired side-effect.
+
+The lockable configuration that would be controlled by RoT-mode includes;
+
+* ePMP locked configuration (CSRs)
+* World-ID "lockable partitioning registers" (CSRs)
+* System-level IOPMP instances (device-mapped registers)
 
 === Extensions and documentation grouping
 
