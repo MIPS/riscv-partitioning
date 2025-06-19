@@ -1,0 +1,60 @@
+:imagesdir: ./images
+
+[[nsreqNonISA]]
+== "eIOPMP NS-Req" non-ISA extension
+
+This section details enhancements on top of the eIOPMP extension set.
+
+=== Input
+
+With this extension enabled, eIOPMP will ascertain the NS-Req security level
+for each input transaction.
+
+****
+eIOPMP SHOULD be configurable to allow the NS-Req security level to be
+determined either (a) as an input field (alongside the RRID/WID input
+parameter), or (b) via the `widseclistX` device registers (derived from the
+RRID/WID input parameter).
+****
+
+=== Output
+
+With this extension enabled, the eIOPMP assumes its output to also contain the
+NS-Req security level to be used for the outgoing/forwarded request (if
+accepted).
+
+=== Registers
+
+==== Summary
+
+Chapter 5 of v0.7 of the IOPMP specification contains a summary table of device
+registers. The definition given is 32-bit centric, so this document follows
+suit. The following table shows eIOPMP additions.
+
+[%header,cols="1,1,1"]
+|===
+| Offset | Register | Changes
+| `0x0100` | *WIDSECLIST0* | *New register*
+3+^| [...]
+| ... | *WIDSECLISTX* | *New register*
+|===
+
+==== `WIDSECLISTX` (new)
+
+[%header,cols="3,2,2,2,8"]
+|===
+| Field | Bits | R/W | Default | Description
+| sl31 | `31:31` | RW until locked | IMP | NS-Req security level for WID 31
+5+^| [...]
+| sl0 | `0:0` | RW until locked | IMP | NS-Req security level for WID 0
+|===
+
+* The above table shows the setting of security levels for WIDs 0 through 31,
+  this is `WIDSECLIST0`. The other `WIDSECLISTX` registers similarly set the
+  security levels for higher-order WIDs.
+* These registers only exists if the eIOPMP is configured without a "NS-Req security
+  level" input signal.
+* The number of `WIDSECLISTX` registers is limited to the number necessary to
+  cover the supported range of WIDs. Higher-order bits and registers will be
+  wired to zero.
+

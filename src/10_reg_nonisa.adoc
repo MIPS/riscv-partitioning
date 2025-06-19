@@ -1,0 +1,14 @@
+:imagesdir: ./images
+
+[[nsattrregNonISA]]
+== "eIOPMP NS-Attr registry" non-ISA extension
+
+=== Preamble
+
+This extension extends the "eIOPMP NS-Attr" non-ISA extension. It implements
+the same mechanism as seen in the "ePMP NS-Attr registry" ISA extension, which
+is to say that the each eIOPMP entry is associated with the NS-Attr security
+attribute for that address-range.
+
+Register details TBD.
+

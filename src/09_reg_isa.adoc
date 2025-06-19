@@ -1,0 +1,41 @@
+:imagesdir: ./images
+
+[[nsattrregISA]]
+== "ePMP NS-Attr registry" ISA extension
+
+=== Preamble
+
+* The "World-ID", "NS-Req", and "NS-Attr" ISA extensions are augmented;
+** Definition of the `pmpnsX` registers, that allow NS-Attr attributes to be
+   associated with each ePMP entry
+
+Recall from the "NS-Attr" ISA extension, that the implementation is responsible
+for maintaining the NS-Attr security attributes for the hart-accessible
+physical address space, so that access control can be performed by comparing
+the hart's effective NS-Req against the target's NS-Attr. It is left undefined
+(a) how the implementation should do this, and (b) what configuration interface
+would be used to provision it.
+
+One possibility is to treat the NS-Attr attribute as a new PMA (Physical Memory
+Attribute). The treatment of PMAs is also left undefined and
+implementation-specific, but as that is presumably a solved problem for
+existing implementations, extending it for NS-Attr would benefit from the
+existing framework.
+
+Another possibility is to store the NS-Attr attributes in ePMP entries, given
+that the hart will already be consulting ePMP for access control over outgoing
+transactions, and so it is a low-effort adaptation to retrieve the NS-Attr
+corresponding to whichever ePMP entry the transaction matches against. This
+extension provides exactly that functionality.
+
+=== `pmpnsX` registers
+
+For each PMP entry X, the corresponding `pmpnsX` register encodes the NS-Attr
+security attribute that is associated with X's address range. An NS-Attr
+attribute uses 2 bits, the exact encoding is specified in <<nsattrPMP>>.
+
+The `pmpnsX` registers will be densely packed into `XLEN` sized CSRs, in
+sufficient number to match the ePMP entry array size.
+
+Register details are TBD.
+

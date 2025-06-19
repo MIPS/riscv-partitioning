@@ -5,10 +5,11 @@
 |===
 
 | Term(s) | Description
+| NS | "Non-Secure", the opposite of "Secure". Synonymous with NS-Req.
+| NS-Req | A boolean security level, a.k.a. the "NS bit", see <<introNSReq>>.
+| NS-Attr | A 2-bit security attribute for access control, see <<introNSAttr>>.
 | PMP | Physical Memory Protection, e.g. ePMP (enhanced PMP) and sPMP (S-mode
         PMP) are ISA extensions, whereas IOPMP is a non-ISA gasket definition.
-| SL | Security Level, see <<introSecurityLevels>>.
-| SQ | Security Qualifier, see <<introSecurityQualifiers>>.
 | TCB/TCG | Trusted Computing Base/Group, see https://trustedcomputinggroup.org.
 | TZ, TrustZone(R) | A system partitioning solution developed by https://www.arm.com[ARM(R)].
 | WG, WorldGuard | A system partitioning solution originally developed by https://www.sifive.com[SiFive Inc.]

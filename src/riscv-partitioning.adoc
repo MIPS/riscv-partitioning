@@ -1,9 +1,9 @@
-= Secure system partitioning with RISC-V Worlds and Security Levels
+= Secure system partitioning with RISC-V Worlds and TrustZone(R)
 :docgroup: RISC-V Task Group
-:description: :description: Secure system partitioning with RISC-V Worlds and Security Levels
+:description: :description: Secure system partitioning with RISC-V Worlds and TrustZone(R)
 :company: RISC-V.org
 :revdate: 4/2025
-:revnumber: 0.7.0-dev
+:revnumber: 0.7.1-dev
 :revremark: This document is under development. Expect changes.
 :revinfo:
 :url-riscv: http://riscv.org
@@ -39,7 +39,7 @@ endif::[]
 :footnote:
 :xrefstyle: short
 
-= Secure system partitioning with RISC-V Worlds and Security Levels
+= Secure system partitioning with RISC-V Worlds and TrustZone(R)
 Non-existant Task Group
 
 // Preamble
@@ -84,80 +84,78 @@ This section of the document covers;
   WorldGuard v0.4 proposal from SiFive by making some tweaks and adding support
   for the Hypervisor extension. It provides support for World-based marking of
   core-initiated transactions.
-* <<eiopmp>>, the "eIOPMP extension". This is derived from the v0.7 of the
-  draft IOPMP specification by making some tweaks and clarifications, as well
-  as adding support for match-based output WID/RRID. I.e. an eIOPMP that can
-  map from an input WID namespace to an output WID namespace.
+* <<eiopmp>>, the "eIOPMP extension". This is derived from v0.7 of the draft
+  IOPMP specification by making some tweaks and clarifications, as well as
+  adding support for match-based output WID/RRID. I.e. an eIOPMP that can map
+  from an input WID namespace to an output WID namespace.
 
 include::03_worlds_isa.adoc[]
 include::04_worlds_nonisa.adoc[]
 
-= "Security Levels"
+= NS-Req
 
-This section of the proposal concerns the "Security Level" concept, which is a
-generalization of the boolean Secure/Non-Secure concept (or "the NS bit") of
-TrustZone(R). It allows the otherwise symmetric concept of a World to be
-qualified according to its degree of security criticality, creating an
-asymmetric relationship between Worlds of different Security Level.
-
-This section of the document covers;
-
-* <<slISA>>, the "Security Levels" ISA extension set. This defines the
-  `mwidseclist` CSR and associated behavior, and provides the functionality
-  that enforces sane relationships between the Security Levels of the hart's 3
-  privilege levels.
-* <<slNonISA>>, the "eIOPMP Security Levels" non-ISA extension. This is to the
-  eIOPMP what the "Security Levels" ISA extension is to the hart, allowing
-  each World ID to be associated with a corresponding Security Level.
-
-include::05_sl_isa.adoc[]
-include::06_sl_nonisa.adoc[]
-
-= "Security Qualifiers"
-
-This section of the proposal concerns the "Security Qualifier" concept, an
-attribute that can be associated with target addresses and that can be compared
-against a transaction to provide Security Level-based access control. (This is
-a generalization of the "NS-Attr" concept found in TrustZone(R).)
+This section of the proposal concerns the "NS-Req" concept from TrustZone(R),
+also known as "the NS bit". It allows the otherwise symmetric concept of a
+World to be qualified according to its degree of security criticality, "Secure"
+or "Non-Secure", creating an asymmetric relationship between Worlds of the two
+different security levels.
 
 This section of the document covers;
 
-* <<sqISA>>, the "Security Qualifiers" ISA extension. This defines the memory
-  attribute type that can be used to provide access-control to contexts that
-  are represented by a Security Level. The extension provides the functionality
+* <<nsreqISA>>, the "NS-Req" ISA extension set. This defines the `mwidseclist` CSR
+  and associated behavior, and also enforces sane relationships between the
+  NS-Req security levels of the hart's 3 privilege levels.
+* <<nsreqNonISA>>, the "eIOPMP NS-Req" non-ISA extension. This is to the eIOPMP
+  what the "NS-Req" ISA extension is to the hart, allowing each World ID to be
+  associated with a corresponding NS-Req security level.
+
+include::05_nsreq_isa.adoc[]
+include::06_nsreq_nonisa.adoc[]
+
+= NS-Attr
+
+This section of the proposal concerns the "NS-Attr" concept from TrustZone(R), a
+security attribute that can be associated with target addresses and that can be
+compared against a transaction to provide security level-based access control.
+
+This section of the document covers;
+
+* <<nsattrISA>>, the "NS-Attr" ISA extension. This defines the memory attribute
+  type that can be used to provide access-control to contexts that are
+  represented by a NS-Req security level. The extension provides the functionality
   that causes a hart (probably through "ePMP") to implement access control
-  based on Security Level and Security Qualifiers.
-* <<sqNonISA>>, the "eIOPMP Security Qualifiers" non-ISA extension. This is to
-  the eIOPMP what the "Security Qualifiers" ISA extension is to the hart,
-  implementing access control based on Security Level and Security Qualifiers.
+  based on NS-Req and NS-Attr.
+* <<nsattrNonISA>>, the "eIOPMP NS-Attr" non-ISA extension. This is to the
+  eIOPMP what the "NS-Attr" ISA extension is to the hart, implementing access
+  control based on NS-Req security level and NS-Attr security attributes.
 
-include::07_sq_isa.adoc[]
-include::08_sq_nonisa.adoc[]
+include::07_nsattr_isa.adoc[]
+include::08_nsattr_nonisa.adoc[]
 
-= PMP registration of Security Qualifiers
+= PMP registration of NS-Attr attributes
 
 This section of the proposal concerns an optional way for implementations to
-perform the task of associating Security Qualifiers with all accessible address
-ranges.
+perform the task of associating NS-Attr security attributes with all accessible
+address ranges.
 
-As defined up to this point, Security Qualifiers, like PMAs (Physical Memory
-Attributes), are managed in an implementation-defined manner. Indeed, they may
-be implemented as a PMA type. Given that harts have ePMP and devices have
-eIOPMP to provide for physical address-based checking of transactions, this
-extension specifies the way in which the ePMP and eIOPMP entries can be
-leveraged to record the Security Qualifiers themselves.
+As defined up to this point, NS-Attr security attributes, like PMAs (Physical
+Memory Attributes), are managed in an implementation-defined manner. Indeed,
+they may be implemented as a PMA type. For other platforms, this extension
+provides an alternative way to record NS-Attr security attributes, by extending
+ePMP (for harts) and eIOPMP (for devices).
 
 This section of the document covers;
 
-* <<sqepmpISA>>, the "ePMP Security Qualifiers" ISA extension. This defines the
-  `pmpsecX` registers that allow ePMP to record, on a per-entry basis, the
-  Security Qualifiers for the corresponding address ranges.
-* <<sqeiopmpNonISA>>, the "eIOPMP Security Qualifiers" non-ISA extension. This
-  is to the eIOPMP what the "ePMP Security Qualifiers" extension is to the
-  ePMP, whereby per-IOPMP-entry recording of Security Qualifiers is supported.
+* <<nsattrregISA>>, the "ePMP NS-Attr registry" ISA extension. This defines the
+  `pmpnsX` registers that allow ePMP to record, on a per-PMP-entry basis, the
+  NS-Attr security attributes for the corresponding address ranges.
+* <<nsattrregNonISA>>, the "eIOPMP NS-Attr registry" non-ISA extension. This is
+  to the eIOPMP what the "ePMP NS-Attr register" extension is to the ePMP,
+  whereby per-IOPMP-entry recording of NS-Attr security attributes is
+  supported.
 
-include::09_sqp_isa.adoc[]
-include::10_sqp_nonisa.adoc[]
+include::09_reg_isa.adoc[]
+include::10_reg_nonisa.adoc[]
 
 include::nonisa.adoc[]
 

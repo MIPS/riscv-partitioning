@@ -1,0 +1,131 @@
+:imagesdir: ./images
+
+[[nsreqISA]]
+== "NS-Req" ISA extension set
+
+=== Preamble
+
+* The World-ID extension set is augmented;
+** The Swidns extension - addition of `mwidseclist` and its behavior. (See
+   <<smwidns>>.)
+** The Swidnsc extension - enforcement of sane relationships between the NS-Req
+   security levels of the (WIDs associated with the) 3 hart privilege levels.
+   (See <<smwidnsc>>).
+
+=== NS-Req definition
+
+There are two distinct NS-Req values, also referred to as NS-Req "security
+levels";
+
+* "Secure", which is represented by the value `0`, and
+* "Non-Secure", which is represented by the value `1`.
+
+The Swidsl extension adds the `mwidseclist` CSR that is like the WID bitmask
+registers in <<isa>> in that it holds a single bit per WID, for up to `XLEN`
+WIDs. Each bit in `mwidseclist` holds the NS-Req security level for the
+corresponding WID.
+
+[[smwidns]]
+=== Smwidns - NS-Req assignments and signalling
+
+This extension is dependent on Smwid.
+
+==== `mwidseclist`
+
+The `mwidseclist` register is defined in <<nsRegisterMap>>, and provides a
+means for associating each WID with a corresponding NS-Req.
+
+Whether all harts (and other initiators) in a given system should have the same
+WID/NS-Req associations is beyond the scope of this document, though it would
+be natural for WID/NS-Req associations to be consistent.
+
+==== Locking
+
+It is important to note that the `mwidseclist` CSR is lockable, it is locked
+conjointly with `mwid` and `mwidlist` whenever `mwid` has its `L` bit set. See
+<<lockablePartitioning>> for more detail.
+
+==== Signaling
+
+The World-ID extensions have already created a new "WID" field that can be
+signalled on outgoing transactions, this may possibly be encoded in AxNSAID on
+AXI5. By enabling the Smwidns extension, another new field, "NS-Req", is
+created that can be signalled on outgoing transactions.
+
+Whether these fields are used and how they are encoded depends on bus protocols
+and integration choices.
+
+To interact with TrustZone(R) targets, the Boolean NS-Req concept is signalled
+in the AxPROT[1] bit on AXI protocols.
+
+[[smwidnsc]]
+=== Smwidnsc - NS-Req privilege constraints
+
+This extension is dependent on Smwidns. For it to have any use, it makes sense
+for at least Smwidl to be enabled.
+
+A run-time privilege constraint is defined that mimics the behavior expected of
+TEE-like software models, namely a lower privilege level cannot be more secure
+the privilege levels above it. In RISC-V terms, and bearing in mind that 'more
+secure' corresponds to a lower NS-Req _value_;
+
+....
+    SecurityLevel(M-mode) <= SecurityLevel(HS-mode)
+    SecurityLevel(HS-mode) <= SecurityLevel(LS-mode)
+    SecurityLevel(HS-mode) <= SecurityLevel(HU-mode)
+    SecurityLevel(VS-mode) <= SecurityLevel(VU-mode)
+....
+
+The following list shows the process for determining whether to accept or
+reject a load/store/fetch transaction with the Swidnsc extension enabled. See
+<<decisionLogic>> for more information on how rejections are handled.
+
+* The NS-Req security level of a privilege mode is determined by using that
+  privilege level's WID as an index into the `mwidseclist` CSR. Zero is an
+  appropriate default for parts that require no NS-Req support.
+* If the hart is in (H)S-mode and the security level of (H)S-mode is superior
+  to the security level of M-mode, reject transaction.
+* If the hart is in VS-mode and the security level of VS-mode is superior to
+  the security level of HS-mode, reject transaction.
+* If the hart is in (H)U-mode and the security level of U-mode is superior to
+  the security level of (H)S-mode, reject transaction.
+* If the hart is in VU-mode and the security level of VS-mode is superior to
+  the security level of HS-mode, reject transaction.
+* The "effective NS-Req" is the NS-Req of the current privilege level.
+
+It should be noted that, semantically, a privilege constraint fails on the
+first instruction fetch after the `xRET` instruction, even if the
+implementation detects the anomalous condition earlier than that. Similarly,
+after the fault, the values in `xstatus/xcause/`[...] will reflect the
+instruction address and privilege mode targetted by the `xRET` instruction.
+
+[[nsRegisterMap]]
+=== Register map addition
+
+==== Summary
+
+[%header,cols="2,2,2,2,3"]
+|===
+| Register | Access | Proposed offset | Suggested default | Description
+| `mwidseclist` | RW for M until locked | ??? | `0x0` | NS-Req security level of WIDs
+|===
+
+==== `mwidseclist`: Security Level of WIDs
+
+[%header,cols="1,2,5"]
+|===
+| Name | Bits | Description
+| MASK | `[XLEN-1]:0`
+| Bit-vector holding the NS-Req security level for each WID.
+|===
+
+This register is locked if and only if the `mwid` register is. The
+`mwidseclist` CSR ignores writes when locked by `mwid`. CSR writes to
+`mwidseclist` and `mwid` are ordered by the hardware in the same manner as
+writes to ePMP registers.  When necessary, software can enforce a specific
+ordering between a CSR write and other instructions with an appropriate FENCE.
+
+Only the registers (and bits thereof) that are required are implemented. For
+WIDs greater than or equal to `NWorlds`, the (remaining) bits are read-only
+zero.
+

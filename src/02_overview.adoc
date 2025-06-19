@@ -10,8 +10,8 @@ following complementary partitioning concepts:
 
 * Worlds, a new concept that owes its heritage to the WorldGuard definition
   released by SiFive.
-* Security Levels and Security Qualifiers, new concepts that generalize the
-  "Secure/Non-Secure" model popularized by TEEs (Trusted Execution
+* NS-Req security levels and NS-Attr security attributes, concepts drawn from
+  the "Secure/Non-Secure" model popularized by TEEs (Trusted Execution
   Environments) and implemented by ARM(R) TrustZone(R).
 * Physical Memory Protection, hereafter "PMP";
 ** "ePMP" for processor-initiated transactions
@@ -34,14 +34,12 @@ security level concept (from two to `NLevels` security levels).
 There are multiple reasons to want to harmonize these partitioning concepts,
 among them;
 
-* Worlds, Security Levels and Security Qualifiers conveniently degenerate to a
-  model that is isomorphic with ARM(R) TrustZone(R) (when `NWorlds` and
-  `NLevels` are 2), allowing for interoperation and integration with
-  TrustZone(R)-centric technology.
-* The `NWorlds==NLevels==2` model has been underpinning Trusted Execution
-  Environment (TEE)-style solutions for many years, so this facilitates the
-  porting of TEE solutions to RISC-V, and opens up avenues for more stratified
-  (and less binary) models in the future.
+* Worlds, NS-Req security levels and NS-Attr security attributes conveniently
+  map to the ARM(R) TrustZone(R) model, allowing for interoperation and
+  integration with TrustZone(R)-centric technology.
+* The TrustZone(R) approach has been underpinning Trusted Execution Environment
+  (TEE)-style solutions for many years, so this facilitates the porting of TEE
+  solutions to RISC-V.
 * There is industry demand to be able to create RISC-V/ARM(R) hybrid solutions,
   e.g. by embedding RISC-V cores into ARM(R)/TrustZone(R)-centric SoCs (and
   vice versa).
@@ -58,9 +56,7 @@ is sometimes called the "NS bit".
 
 ARMv8-M uses the term "NS-Req" to refer to the TZ security level of a request,
 and "NS-Attr" to refer to the TZ security attribute of an addressable resource
-that an NS-Req can be compared against. As will be seen, NS-Req and NS-Attr
-correspond to our (more generalized) concepts of Security Levels and Security
-Qualifiers, respectively.
+that an NS-Req can be compared against.
 
 === Worlds
 
@@ -90,41 +86,49 @@ The ISA implementation has a corresponding, and software-discoverable,
 `NWorlds` configuration constant, representing the maximum number of distinct
 Worlds supported by the ISA functionality.
 
-[[introSecurityLevels]]
-=== Security Levels
+[[introNSReq]]
+=== NS-Req security levels
 
-Security Levels (hereafter "SL") is a scale that the system can assign to
-Worlds in order to define a security stratification (of up to `NLevels`, a
-software-discoverable constant). The TrustZone(R) model is equivalent to the
-`NLevels==2` case.
+NS-Req is a single-bit scale that the system can assign to Worlds in order to
+define a security stratification. The value zero corresponds to "Secure" and
+the value 1 corresponds to "Non-Secure", which is where the "NS" acronym
+originates. When the core initiates a load/store/fetch transaction, this
+security level can be signalled on the outgoing request, which is where the
+"Req" originates.
 
-There is an extension for the hart to enforce/police the expected SL
-relationships between the hart's privilege levels. This ensures that the SL for
-S-mode is never superior to the SL for M-mode, that U-mode is never superior to
-S-mode, etc.
+There is a further extension available for the hart to enforce/police the
+expected NS-Req relationships between the hart's privilege levels. This ensures
+that the NS-Req for S-mode is never superior to the NS-Req for M-mode, that
+U-mode is never superior to S-mode, etc.
 
-Note that, even if `NLevels` is greater than two, one could interoperate with a
-TrustZone(R)-enabled interconnect by identifying `SL==0` with "Secure", and
-`SL!=0` with "Non-Secure", and signaling the "NS bit" accordingly.
+[[introNSAttr]]
+=== NS-Attr security attributes
 
-[[introSecurityQualifiers]]
-=== Security Qualifiers
+NS-Attr security attributes are assigned to accessible resources (address
+ranges) as a form of access-control. The NS-Req of a transaction request can be
+compared against the NS-Attr of the targetted resource in order to determine
+whether the access should go ahead. This is usually performed as a source-check,
+meaning that the decision point controls whether or not a transaction request
+should be emitted.
 
-A Security Qualifier (hereafter "SQ") consists of a pair of SL fields and a
-boolean field, and it represents the access-control information for a given
-resource (physical address range). The first of the two SL fields indicates the
-lowest SL that is permitted access to the resource, the boolean indicates
-whether the caller's SL should be propagated or whether a qualifier-specific
-SL value should be used if the transaction is accepted, and the second SL field
-is that qualifier-specific value. (The latter SL field is necessarily equal or
-inferior to the former, to inhibit privilege-escalation.)
+The NS-Attr security attribute encodes;
 
-One subtlety to note about SQs is with respect to instruction fetching and, if
-an MMU is present, page-table fetches. A workload shouldn't fetch instructions
-(nor should it load page-tables) from an address range that is accessible to
-inferior SLs, to close the attack vectors that could otherwise result. As such,
-for those classes of transactions, the "superior or equal" comparison between
-SL (the hart) and SQ (the resource) is replaced with an equality comparison.
+* whether access should be granted for a Non-Secure NS-Req,
+* if access is granted, whether the transaction should be signalled as Secure
+  or Non-Secure.
+
+The encoding can cause a Secure NS-Req to emit a Non-Secure transaction, but
+does not allow a Non-Secure NS-Req to emit a a Secure transaction (to inhibit
+privilege-escalation).
+
+One subtlety to note about NS-Attr is with respect to instruction fetching and,
+if an MMU is present, page-table fetches. A Secure workload shouldn't fetch
+instructions (nor should it load page-tables) from an address range that might
+be accessible to a Non-Secure workload, to close the attack vectors that could
+otherwise result. As such, for those classes of transaction, the comparison
+between NS-Req (the state of the hart) and the NS-Attr (the resource) is
+constrained, i.e. "Secure" worlds can only fetch (or load page-tables) from
+"Secure Memory".
 
 === ePMP
 
@@ -136,38 +140,38 @@ lends itself to having "lockable" configuration, to constrain M-mode access in
 a way that it can't subsequently reconfigure (without a reset).
 
 There is no need to adjust ePMP for WID isolation behavior, but there is a need
-to enhance it to support SQ-enforcement behavior.  __Specifically, ePMP will
-need to be cognizant of (i) the hart's effective security level (the SL of
-outgoing transactions), and (ii) the target resource's SQ, in order to prevent
-the hart from accessing a resource that is restricted to superior SLs. ePMP may
-also be responsible for recording (through `pmpsqX` register settings) the SQ
-of physical address ranges, depending on how the platform manages such
-attributes (and on whether the Smwidsq extension is enabled).__
+to enhance it to support NS-Attr-enforcement behavior.  __Specifically, ePMP
+will need to be cognizant of (i) the hart's effective NS-Req security level,
+and (ii) the target resource's NS-Attr, in order to prevent the hart from
+accessing a resource that it shouldn't. ePMP may also be responsible for
+recording (through `pmpnsX` register settings) the NS-Attr attributes of
+physical address ranges, depending on how the platform manages such attributes
+(and on whether the Smwidnsreg extension is enabled).__
 
 === IOPMP
 
-The publicly-defined IOPMP block is independent of the WID, SL, and SQ (and
-TrustZone(R)) concepts. It specifies a prototypical "checker" (with minimal
-"marker" functionality also) for use with device initiators. This configurable
-block is a form of firewall and is proposed primarily for the purpose of
-providing source-side transaction checking for a device, akin to the
+The publicly-defined IOPMP block is independent of the WID, NS-Req, and NS-Attr
+(and TrustZone(R)) concepts. It specifies a prototypical "checker" (with
+minimal "marker" functionality also) for use with device initiators. This
+configurable block is a form of firewall and is proposed primarily for the
+purpose of providing source-side transaction checking for a device, akin to the
 source-side checking provided by ePMP for core-initiated transactions. The
 IOPMP definition also suggests that IOPMP might be used target-side, but leaves
 as "implementation-dependent" the manner in which an input RRID would be
 provided in that case.
 
-To make use of WID (at all) and/or SL (outside the hart), there must be
-WID-aware (and/or SL-aware) targets and/or routers within the interconnect,
+To make use of WID (at all) and/or NS-Req (outside the hart), there must be
+WID-aware (and/or NS-Req-aware) targets and/or routers within the interconnect,
 otherwise there is little point to tagging transactions with either concept.
 __We achieve this by making a small series of improvements to IOPMP.__ The
 resulting "enhanced IOPMP" (hereafter "eIOPMP") can be instantiated as a
 target-side or routing firewall.
 
 Note also that, as with ePMP, there is the implementation-specific decision of
-how the SQ attributes are maintained for the physical address space, so that
-the eIOPMP can compare the SL of the request(er) against the target range. __We
-provide an optional mechanism for recording the SQ attributes of physical
-address ranges within the ePMP/eIOPMP configuration.__
+how the NS-Attr attributes are maintained for the physical address space, so
+that the eIOPMP can compare the NS-Req of the request(er) against the target
+range. __We provide an optional mechanism for recording the NS-Attr attributes
+of physical address ranges within the ePMP/eIOPMP configuration.__
 
 [[extconfig]]
 === External configuration
@@ -211,9 +215,10 @@ be exposed for external control.__
 
 ePMP also contributes to the system partitioning, through the ability to write
 (and lock) rules that govern even M-mode's access to the hart's addressable
-resources. On some platforms (when Smwidsq is enabled), the `pmpsqX` registers
-may also be the way in which physical address ranges are assigned their SQ
-attributes. __The ePMP registers should be exposed for external control.__
+resources. On some platforms (when Smwidnsreg is enabled), the `pmpnsX`
+registers may also be the way in which physical address ranges are assigned
+their SQ attributes. __The ePMP registers should be exposed for external
+control.__
 
 ==== eIOPMP
 
@@ -231,8 +236,8 @@ attributes for the physical address ranges it covers, this depends on how the
 platform chooses to implement these attributes. (They may alternatively be
 tracked by the platform's PMAs, i.e. Physical Memory Attributes, in which case
 the eIOPMP may instead obtain the information that way.) __The eIOPMP may be
-responsible for recording the SQ attributes of the physical address ranges it
-covers.__
+responsible for recording the NS-Attr attributes of the physical address ranges
+it covers.__
 
 Though some of the IOPMP register settings advertise their own locking
 mechanisms, they only provide for a partial lockdown of the
@@ -261,9 +266,9 @@ early-boot M-mode code and/or to a completely external agent. But that has
 value in itself, as that is the comparison between (a) a system that boots
 itself, with (b) a subsystem that is booted by a parent system.  As we will see
 in the diagrams of <<extensions>>, the addition of this "RoT-mode" psuedo
-privilege level allows a constraints-based visualization to emerge, it extends
-from U-mode through M-mode to beyond-the-hart. Constraining M-mode is the
-desired side-effect.
+privilege level allows a constraints-based visualization to emerge, which
+extends from U-mode through M-mode to beyond-the-hart. Constraining M-mode is
+the desired side-effect.
 
 The lockable configuration that would be controlled by RoT-mode includes;
 
@@ -291,36 +296,38 @@ separable a manner as possible.
    specification by making some tweaks and clarifications, and adding support
    for match-based output WID/RRID. I.e. an eIOPMP that can map from an input
    WID namespace to an output WID namespace.
-* "Security Levels"
-** The "Security Levels" ISA extension. This allows World IDs to be classified
-   by SL. It also enforces sane relationships between the SLs of the hart's 3
-   privilege levels.
-** The "eIOPMP Security Levels" non-ISA extension. This is to the eIOPMP what
-   the "Security Levels" ISA extension is to the hart, it classifies the
-   available World IDs into their respective SLs, which is useful if the eIOPMP
-   instance is configured to signal the resulting SL on outgoing transactions.
-* "Security Qualifiers"
-** The "Security Qualifiers" ISA extension. This extension defines the concept
-   of an SQ, a 2-tuple of SLs that one associates with a resource's physical
-   address range. The hart checks all outgoing load/store/fetch transactions
-   using the effective WID's SL and, by comparing that against the SQ for the
-   target physical address, it faults any transaction that isn't permitted.
-   This extension assumes the platform has a mechanism for defining SQs for the
-   accessible address space, e.g. as a PMA (Physical Memory Attribute).
-** The "eIOPMP Security Qualifiers" non-ISA extension. This is to the eIOPMP
-   what the "Security Qualifiers" extension is to the hart, it introduces the
-   SQ concept to the eIOPMP, implying that it will perform enforcement of SQs
-   on all input transactions before forwarding (or rejecting) them.
-* "PMP registration of Security Qualifiers".
-** The "ePMP Security Qualifier registry" ISA extension. This extension
-   advertises that the ePMP manages the SQs for the hart's accessible physical
+* NS-Req
+** The "NS-Req" ISA extension set. This allows World IDs to be classified by
+   security level. It also enforces sane relationships between the security
+   levels of the hart's 3 privilege levels.
+** The "eIOPMP NS-Req" non-ISA extension. This is to the eIOPMP what the
+   "NS-Req" ISA extension set is to the hart, it classifies the available
+   World IDs into their respective NS-Req security levels, which is useful if
+   the eIOPMP instance is configured to signal the resulting NS-Req on outgoing
+   transactions.
+* NS-Attr
+** The "NS-Attr" ISA extension. This extension defines the concept a security
+   attribute that one associates with a resource's physical address range. The
+   hart checks all outgoing load/store/fetch transactions using the effective
+   WID's NS-Req and, by comparing that against the NS-Attr for the target
+   physical address, it faults any transactions that aren't permitted. This
+   extension assumes the platform has a mechanism for defining NS-Attr
+   attributes for the accessible address space, e.g. as a PMA (Physical Memory
+   Attribute).
+** The "eIOPMP NS-Attr" non-ISA extension. This is to the eIOPMP what the
+   "NS-Attr" extension is to the hart, it introduces the NS-Attr concept to the
+   eIOPMP, implying that it will perform enforcement of NS-Attr on all input
+   transactions before forwarding (or rejecting) them.
+* PMP registration of NS-Attr attributes.
+** The "ePMP NS-Attr registry" ISA extension. This extension advertises that
+   the ePMP manages the NS-Attr attributes for the hart's accessible physical
    address space, as an alternative to any other platform-specific mechanism
-   for recording SQs.
-** The "eIOPMP Security Qualifier registry" non-ISA extension. This is to the
-   eIOPMP what the "Security Qualifiers for ePMP" extension is to the hart, it
-   advertises that the eIOPMP manages the SQs for the eIOPMP's accessible
-   physical address space, as an alternative to any other platform-specific
-   mechanism for recording SQs.
+   for recording attributes.
+** The "eIOPMP NS-Attr registry" non-ISA extension. This is to the eIOPMP what
+   the "ePMP NS-Attr registry" extension is to the hart, it advertises that the
+   eIOPMP manages the NS-Attr attributes for the eIOPMP's accessible physical
+   address space, as an alternative to any other platform-specific mechanism
+   for recording attributes.
 
 Here is an overview of the ISA extensions covered in this document;
 
@@ -332,9 +339,9 @@ Here is an overview of the ISA extensions covered in this document;
                        | Smwidm | Delegation to M-mode
                        | Smwids | User-mode and delegation to S-mode
                        | Smwidv | Hypervisor support
-.2+| Security Levels | Smwidsl | Security Level assignments and signalling
-                     | Smwidslc | Security Level privilege constraints
-| Security Qualifiers | Smwidsq | Security Qualifier transaction checking
-| PMP registration of Security Qualifiers | TBD | ePMP registration of Security Qualifiers
+.2+| NS-Req            | Smwidns | NS-Req assignments and signalling
+                       | Smwidnsc | NS-Req privilege constraints
+| NS-Attr              | Smwidnsa | NS-Attr transaction checking
+| PMP registration of NS-Attr | Smwidnsreg | ePMP registration of NS-Attr
 |===
 

@@ -1,0 +1,84 @@
+:imagesdir: ./images
+
+[[nsattrISA]]
+== "NS-Attr" ISA extension
+
+=== Preamble
+
+* The "World-ID" and "NS-Req" ISA extension sets are augmented;
+** Definition of the NS-Attr security attribute type, that the implementation
+   is required to maintain for all (hart-accessible) address ranges. See
+   <<nsattr>>.
+** Enhanced ePMP checking, to compare the effective NS-Req (of the
+   current privilege level's WID) against the NS-Attr(s) for the
+   target address range(s). See <<nsattrPMP>>.
+* Guidance is provided regarding M-mode changing its own NS-Req security level.
+  (See "Changing Security Level" below in <<changingSecurityLevel>>.)
+
+[[nsattr]]
+=== Smwidnsa - NS-Attr transaction checking
+
+This extension depends on Smwidns.
+
+==== Definition of a NS-Attr security attribute
+
+When access to a resource is protected by a NS-Attr security attribute, all load/store/fetch
+transactions on that resource are subject to decision logic that compares the effective NS-Req
+with the NS-Attr attribute for the resource. The NS-Attr also determines, if the transaction is
+accepted, whether the transaction is _signalled_ as "Secure" or "Non-Secure". (I.e. this can
+be different than the effective NS-Req.)
+
+==== Instruction fetch and table walk
+
+It is dangerous for Secure worlds to trust instructions or page table entries
+that are fetched from memory that is also accessible to Non-Secure worlds.
+Instruction fetches and MMU page table loads for Secure worlds are therefore
+restricted to the "Secure Memory" NS-Attr type, as can be seen in the next
+section.
+
+[[nsattrPMP]]
+==== Decision logic
+
+Per the descriptions above, the hart (probably in the ePMP) uses the following
+constraint logic to determine the fate of a potential load/store/fetch
+transaction;
+
+[%header,cols="1,3,2,2,2"]
+|===
+| NS-Attr| NS-Attr name | Permitted Non-Secure requests | Permitted Secure requests | Emitted NS-Req
+| `00b` | *Secure Memory* | None | Read, Write, eXecute | Secure
+| `01b` | *Secure Private Non-Secure Memory* | None | Read, Write | Non-Secure
+| `10b` | Unused/reserved/illegal | None | None | Fault
+| `11b` | *Non-Secure Memory* | Read, Write, eXecute | Read, Write | Non-Secure
+|===
+
+[[changingSecurityLevel]]
+=== Changing Security Level at run-time
+
+If the intention is for M-mode to modify the NS-Req security level of its own
+WID, there is a subtlety to note about modifications to the `mwid` and
+`mwidseclistX` CSR registers.
+
+Consider, if the current `mwid` and `mwidseclistX` CSR values imply that the
+NS-Req of M-mode is "Secure", then any M-mode instruction fetches must
+necessarily be going to memory whose NS-Attr type is "Secure Memory". It would
+follow that M-mode can never safely change its NS-Req to "Non-Secure" by
+issuing writes to `mwid` and/or `mwidseclistX`, because the write that triggers
+the change of NS-Req will be followed immediately by an instruction fetch
+fault. (The next instruction fetch will still be going to "Secure Memory", but
+the new NS-Req expects the memory to be of the "Non-Secure Memory" type.)
+
+If `mwid` is configured externally, before the harts are executing, this
+problem doesn't arise. Likewise, if M-mode doesn't need to support running in
+"Non-Secure", no problem. This issue only arises if M-mode is performing the
+NS-Req change within the hart itself through write operations.
+
+The recommended solution, for any platform/implementation that needs to handle
+this case, is to "embrace the fault". Namely, in preparation for changing
+M-mode's NS-Req, the trap vectors will necessarily need to be changed to point
+to the type of memory that the new NS-Req will expect, and so once M-mode makes
+the write that triggers the change of NS-Req, the following instruction fetch
+will fault into an M-mode trap handler that is running out of the type of
+memory that the new NS-Req expects. In this way, control is passed from the
+previously-required memory type to the newly-required memory type.
+

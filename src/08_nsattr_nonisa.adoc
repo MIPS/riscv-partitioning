@@ -1,0 +1,19 @@
+:imagesdir: ./images
+
+[[nsattrNonISA]]
+== "eIOPMP NS-Attr" non-ISA extension
+
+This section details enhancements on top of the eIOPMP NS-Req extension.
+However there is very little that needs saying for this extension!
+
+<<nsattrISA>> defines the NS-Attr security attribute type (in <<nsattr>>) and
+describes how the implementation is required to maintain the NS-Attr state for
+all hart-accessible address ranges. Well, this non-ISA extension requires the
+implementation to maintain that same state for all eIOPMP-accessible address
+ranges also.
+
+With this extension (enabled), the eIOPMP commits to enforcing the same
+relationships (between the NS-Req of an input transaction and the NS-Attr
+security attribute(s) for the target address range) as described in the ISA
+extension.
+
