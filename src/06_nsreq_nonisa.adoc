@@ -52,7 +52,7 @@ suit. The following table shows eIOPMP additions.
 * The above table shows the setting of security levels for WIDs 0 through 31,
   this is `WIDSECLIST0`. The other `WIDSECLISTX` registers similarly set the
   security levels for higher-order WIDs.
-* These registers only exists if the eIOPMP is configured without a "NS-Req security
+* These registers only exist if the eIOPMP is configured without a "NS-Req security
   level" input signal.
 * The number of `WIDSECLISTX` registers is limited to the number necessary to
   cover the supported range of WIDs. Higher-order bits and registers will be

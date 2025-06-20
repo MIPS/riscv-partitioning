@@ -14,12 +14,12 @@ This section of the document covers;
 
 RISC-V Worlds allow the SoC integrator to place “checker” logic arbitrarily
 close to the target device (in the interconnect topology) because each
-transaction carries its WID and NS fields with it. This means that any cache on
-the path that might allocate data into cache lines will need to tag those cache
-lines with the WID of the originating transaction. __Note, it is not necessary
-to tag cache lines with the NS attribute as well, because that is derived from
-the WID. I.e. two transactions cannot have different NS attributes and yet have
-the same WID.__
+transaction carries its WID (and possibly NS) field(s) with it. This means that
+any cache on the path that might allocate data into cache lines will need to
+tag those cache lines with the WID of the originating transaction. __Note, it
+is not necessary to tag cache lines with the NS attribute as well, because that
+is derived from the WID. I.e. two transactions cannot have different NS
+attributes and yet have the same WID.__
 
 If a subsequent request matches on a cached physical address but either of the
 following discrepancies is observed, then the cache line should be evicted, and
@@ -76,13 +76,13 @@ outside the scope of this document.
 == Bus protocols
 
 We have very carefully avoided being too specific in this proposal about how
-exactly bus transactions should transport their WID and SL (and/or NS) fields,
-as this should be something that can be controlled at integration time and
-adapted to different bus protocols as required. In this section, we will
-describe some canonical assumptions about how these fields can be encoded (and
-decoded) in AXI5, but implementations may wish to use alternative
-representations, and integrators may subsequently wish to interpose gaskets to
-repack or renormalize these fields in different ways.
+exactly bus transactions should transport their WID (and/or NS) fields, as this
+should be something that can be controlled at integration time and adapted to
+different bus protocols as required. In this section, we will describe some
+canonical assumptions about how these fields can be encoded (and decoded) in
+AXI5, but implementations may wish to use alternative representations, and
+integrators may subsequently wish to interpose gaskets to repack or renormalize
+these fields in different ways.
 
 === WID
 

@@ -28,8 +28,7 @@ a composition of two functionalities;
   levels.
 
 "Worlds" is a generalization of the symmetric isolation concept (from two to
-`NWorlds` worlds), and "Security Levels" is a generalization of the asymmetric
-security level concept (from two to `NLevels` security levels).
+`NWorlds` worlds).
 
 There are multiple reasons to want to harmonize these partitioning concepts,
 among them;
@@ -127,8 +126,8 @@ instructions (nor should it load page-tables) from an address range that might
 be accessible to a Non-Secure workload, to close the attack vectors that could
 otherwise result. As such, for those classes of transaction, the comparison
 between NS-Req (the state of the hart) and the NS-Attr (the resource) is
-constrained, i.e. "Secure" worlds can only fetch (or load page-tables) from
-"Secure Memory".
+further constrained, i.e. "Secure" worlds can only fetch (or load page-tables)
+from "Secure Memory".
 
 === ePMP
 
@@ -217,7 +216,7 @@ ePMP also contributes to the system partitioning, through the ability to write
 (and lock) rules that govern even M-mode's access to the hart's addressable
 resources. On some platforms (when Smwidnsreg is enabled), the `pmpnsX`
 registers may also be the way in which physical address ranges are assigned
-their SQ attributes. __The ePMP registers should be exposed for external
+their NS-Attr attributes. __The ePMP registers should be exposed for external
 control.__
 
 ==== eIOPMP
@@ -231,7 +230,7 @@ integrated into an IOMMU, DMA engine, memory controller, ...]. It is an
 integration-level decision where an eIOPMP instance's registers appear and how
 they are exposed.
 
-As with the ePMP, the eIOPMP may also be responsible for recording the SQ
+As with the ePMP, the eIOPMP may also be responsible for recording the NS-Attr
 attributes for the physical address ranges it covers, this depends on how the
 platform chooses to implement these attributes. (They may alternatively be
 tracked by the platform's PMAs, i.e. Physical Memory Attributes, in which case
