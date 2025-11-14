@@ -3,7 +3,7 @@
 :description: :description: Secure system partitioning with RISC-V Worlds and TrustZone(R)
 :company: RISC-V.org
 :revdate: 11/2025
-:revnumber: 0.7.2
+:revnumber: 0.7.3-dev
 :revremark: This document is under development. Expect changes.
 :revinfo:
 :url-riscv: http://riscv.org
