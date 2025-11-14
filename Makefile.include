@@ -38,6 +38,9 @@ DESTDIR := ${PWD}/build
 endif
 endif
 
+# Patch the docs-resources submodule to fix the copyright
+$(shell perl -pi.bak -e "s/RISC-V International/MIPS/" docs-resources/themes/riscv-pdf.yml)
+
 # Change these if you must;
 ASCIIDOCTOR_PDF := asciidoctor-pdf
 ASCIIDOCTOR_HTML := asciidoctor

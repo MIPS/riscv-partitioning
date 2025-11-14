@@ -12,8 +12,8 @@
 :colophon:
 :appendix-caption: Appendix
 // https://docs.asciidoctor.org/asciidoc/latest/macros/images-directory/
-:imagesdir: /inputs/docs-resources/images
-:title-logo-image: image:risc-v_logo.svg["RISC-V Logo",pdfwidth=3.25in,align=center]
+:imagesdir: /inputs/src/images
+:title-logo-image: image:whitespace.jpg["Whitespace",pdfwidth=3.25in,align=center]
 // Settings:
 :experimental:
 :reproducible:
