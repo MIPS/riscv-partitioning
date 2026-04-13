@@ -16,9 +16,9 @@
   (See "Changing Security Level" below in <<changingSecurityLevel>>.)
 
 [[nsattr]]
-=== Smwidnsa - NS-Attr transaction checking
+=== Zmwidnsa - NS-Attr transaction checking
 
-This extension depends on Smwidns.
+This extension depends on Zmwidns.
 
 ==== Definition of a NS-Attr security attribute
 

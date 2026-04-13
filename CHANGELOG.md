@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **_NOTE:_** PROJECTS BUILT USING THE TEMPLATE SHOULD UPDATE THE BELOW SECTIONS AS-NEEDED.
 
 ## [0.7.3-dev]
+- Update to use the draft "Worlds" spec as the baseline, a lot of chapter 3 is
+  thus removed as much of it was contributed to the draft Worlds spec.
+- Prefix CSRs with "mips" and document them using MIPS-allocated CSR offsets,
+  chosen from the vendor-specific ranges.
+- For extensions in the RVI draft, use matching extension names. For other
+  extensions, use the "Z" prefix.
 
 ## [0.7.2]
 - Diagram updates

@@ -28,6 +28,11 @@ transactions, and so it is a low-effort adaptation to retrieve the NS-Attr
 corresponding to whichever ePMP entry the transaction matches against. This
 extension provides exactly that functionality.
 
+[[zmwidnspmp]]
+=== Zmwidnspmp - ePMP-based NS-Attr registry
+
+This extension is dependent on Zmwidnsa.
+
 === `pmpnsX` registers
 
 For each PMP entry X, the corresponding `pmpnsX` register encodes the NS-Attr

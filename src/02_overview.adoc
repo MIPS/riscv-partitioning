@@ -8,8 +8,9 @@
 This document attempts to present (and demonstate how to reconcile) the
 following complementary partitioning concepts:
 
-* Worlds, a new concept that owes its heritage to the WorldGuard definition
-  released by SiFive.
+* Worlds, a new RISC-V concept that owes its heritage to the WorldGuard definition
+  released by SiFive, refined by the RVI security community and in the process of
+  ratification.
 * NS-Req security levels and NS-Attr security attributes, concepts drawn from
   the "Secure/Non-Secure" model popularized by TEEs (Trusted Execution
   Environments) and implemented by ARM(R) TrustZone(R).
@@ -38,7 +39,7 @@ among them;
   integration with TrustZone(R)-centric technology.
 * The TrustZone(R) approach has been underpinning Trusted Execution Environment
   (TEE)-style solutions for many years, so this facilitates the porting of TEE
-  solutions to RISC-V.
+  solutions to RISC-V platforms.
 * There is industry demand to be able to create RISC-V/ARM(R) hybrid solutions,
   e.g. by embedding RISC-V cores into ARM(R)/TrustZone(R)-centric SoCs (and
   vice versa).
@@ -90,10 +91,10 @@ Worlds supported by the ISA functionality.
 
 NS-Req is a single-bit scale that the system can assign to Worlds in order to
 define a security stratification. The value zero corresponds to "Secure" and
-the value 1 corresponds to "Non-Secure", which is where the "NS" acronym
-originates. When the core initiates a load/store/fetch transaction, this
-security level can be signalled on the outgoing request, which is where the
-"Req" originates.
+the value 1 corresponds to "Non-Secure", which explains the presence of "NS" in
+the definition. When the core initiates a load/store/fetch transaction, this
+security level can be signalled on the outgoing request, which explains the
+presence of "Req" in the definition.
 
 There is a further extension available for the hart to enforce/police the
 expected NS-Req relationships between the hart's privilege levels. This ensures
@@ -223,7 +224,7 @@ control.__
 
 eIOPMP is, at its core, a look-aside firewall component with a set of
 configuration registers. It may also be packaged as a bus gasket, which may add
-to the configuration interface (otherwise the look-aside is presumably embedded
+to its configuration interface (otherwise the look-aside is presumably embedded
 within another component and its register map)footnote:[There are interconnects
 that can incorporate look-aside components of this sort. Or it may be
 integrated into an IOMMU, DMA engine, memory controller, ...]. It is an
@@ -247,34 +248,6 @@ whole (with the exception of the "Error capture registers").__
 __The whole eIOPMP configuration interface should be exposed for external
 control.__
 
-[[rotMode]]
-==== RoT-mode and M-mode
-
-We have argued that the ability to perform lockable configuration from outside
-the (sub)system should be equivalent to the ability to perform lockable
-configuration from M-mode within the (sub)system. If we ignore any distinction
-between the two and consider them as the same logical entity - then we could
-note that this entity has the privilege to set lockable configuration, after
-which the configuration cannot be altered by run-time M-mode, which is
-constrained by its effects. If one considers that observation, one can talk
-about a metaphorical "RoT-mode" that is more highly privileged than "run-time
-M-mode", because the former can configure constraints on the latter.
-
-This ostensible "RoT-mode" concept is usefully vague, it applies equally to
-early-boot M-mode code and/or to a completely external agent. But that has
-value in itself, as that is the comparison between (a) a system that boots
-itself, with (b) a subsystem that is booted by a parent system.  As we will see
-in the diagrams of <<extensions>>, the addition of this "RoT-mode" psuedo
-privilege level allows a constraints-based visualization to emerge, which
-extends from U-mode through M-mode to beyond-the-hart. Constraining M-mode is
-the desired side-effect.
-
-The lockable configuration that would be controlled by RoT-mode includes;
-
-* ePMP locked configuration (CSRs)
-* World-ID "lockable partitioning registers" (CSRs)
-* System-level IOPMP instances (device-mapped registers)
-
 === Extensions and documentation grouping
 
 In keeping with RVI convention, functionality is introduced in small units
@@ -287,10 +260,8 @@ such that each can provide its own context, requirements, and solutions in as
 separable a manner as possible.
 
 * "Worlds" baseline
-** The "World-ID" ISA extension set. This is derived from the original
-   WorldGuard v0.4 proposal from SiFive by making some tweaks and adding
-   support for the Hypervisor extension. It provides support for World-based
-   marking of core-initiated transactions.
+** The draft "Worlds" ISA extension set, and the proposed draft to extend
+   "Worlds" support to include the Hypervisor extension's privilege levels.
 ** The "eIOPMP extension". This is derived from v0.7 of the draft IOPMP
    specification by making some tweaks and clarifications, and adding support
    for match-based output WID/RRID. I.e. an eIOPMP that can map from an input
@@ -333,14 +304,16 @@ Here is an overview of the ISA extensions covered in this document;
 [%header,cols="3,1,3"]
 |===
 | *Sub-proposal* | *Ext name* | *Content*
-.5+| World-ID baseline | Smwid | Hart-specific WID
-                       | Smwidl | Lower-than-M-mode WID
-                       | Smwidm | Delegation to M-mode
-                       | Smwids | User-mode and delegation to S-mode
-                       | Smwidv | Hypervisor support
-.2+| NS-Req            | Smwidns | NS-Req assignments and signalling
-                       | Smwidnsc | NS-Req privilege constraints
-| NS-Attr              | Smwidnsa | NS-Attr transaction checking
-| PMP registration of NS-Attr | Smwidnsreg | ePMP registration of NS-Attr
+.7+| World-ID baseline | Smwid | Hart-specific WID
+                       | Smlwid | Lower-than-M-mode WID
+                       | Smlwidlist | Constraining lower-than-M-mode WID
+                       | Smwdeleg | Delegation
+                       | Sswid | Lower-than-S-mode WID
+                       | Shlwid | Hypervisor support
+                       | Shwdeleg| Hypervisor support
+.2+| NS-Req            | Zmwidns | NS-Req assignments and signalling
+                       | Zmwidnsc | NS-Req privilege constraints
+| NS-Attr              | Zmwidnsa | NS-Attr transaction checking
+| PMP registration of NS-Attr | Zmwidnspmp | ePMP registration of NS-Attr
 |===
 

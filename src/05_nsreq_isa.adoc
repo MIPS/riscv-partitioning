@@ -6,11 +6,11 @@
 === Preamble
 
 * The World-ID extension set is augmented;
-** The Swidns extension - addition of `mwidseclist` and its behavior. (See
-   <<smwidns>>.)
-** The Swidnsc extension - enforcement of sane relationships between the NS-Req
+** The Zwidns extension - addition of `mwidseclist` and its behavior. (See
+   <<zmwidns>>.)
+** The Zwidnsc extension - enforcement of sane relationships between the NS-Req
    security levels of the (WIDs associated with the) 3 hart privilege levels.
-   (See <<smwidnsc>>).
+   (See <<zmwidnsc>>).
 
 === NS-Req definition
 
@@ -20,20 +20,17 @@ levels";
 * "Secure", which is represented by the value `0`, and
 * "Non-Secure", which is represented by the value `1`.
 
-The Swidsl extension adds the `mwidseclist` CSR that is like the WID bitmask
-registers in <<isa>> in that it holds a single bit per WID, for up to `XLEN`
-WIDs. Each bit in `mwidseclist` holds the NS-Req security level for the
-corresponding WID.
-
-[[smwidns]]
-=== Smwidns - NS-Req assignments and signalling
+[[zmwidns]]
+=== Zmwidns - NS-Req assignments and signalling
 
 This extension is dependent on Smwid.
 
 ==== `mwidseclist`
 
-The `mwidseclist` register is defined in <<nsRegisterMap>>, and provides a
-means for associating each WID with a corresponding NS-Req.
+The Zwidns extension adds the `mwidseclist` CSR that is like the WID bitmask
+registers in <<isa>> in that it holds a single bit per WID, for up to `XLEN`
+WIDs. Each bit in `mwidseclist` holds the NS-Req security level for the
+corresponding WID.
 
 Whether all harts (and other initiators) in a given system should have the same
 WID/NS-Req associations is beyond the scope of this document, though it would
@@ -49,7 +46,7 @@ conjointly with `mwid` and `mwidlist` whenever `mwid` has its `L` bit set. See
 
 The World-ID extensions have already created a new "WID" field that can be
 signalled on outgoing transactions, this may possibly be encoded in AxNSAID on
-AXI5. By enabling the Smwidns extension, another new field, "NS-Req", is
+AXI5. By enabling the Zmwidns extension, another new field, "NS-Req", is
 created that can be signalled on outgoing transactions.
 
 Whether these fields are used and how they are encoded depends on bus protocols
@@ -58,10 +55,10 @@ and integration choices.
 To interact with TrustZone(R) targets, the Boolean NS-Req concept is signalled
 in the AxPROT[1] bit on AXI protocols.
 
-[[smwidnsc]]
-=== Smwidnsc - NS-Req privilege constraints
+[[zmwidnsc]]
+=== Zmwidnsc - NS-Req privilege constraints
 
-This extension is dependent on Smwidns. For it to have any use, it makes sense
+This extension is dependent on Zmwidns. For it to have any use, it makes sense
 for at least Smwidl to be enabled.
 
 A run-time privilege constraint is defined that mimics the behavior expected of
@@ -77,7 +74,7 @@ secure' corresponds to a lower NS-Req _value_;
 ....
 
 The following list shows the process for determining whether to accept or
-reject a load/store/fetch transaction with the Swidnsc extension enabled. See
+reject a load/store/fetch transaction with the Zwidnsc extension enabled. See
 <<decisionLogic>> for more information on how rejections are handled.
 
 * The NS-Req security level of a privilege mode is determined by using that
@@ -107,10 +104,10 @@ instruction address and privilege mode targetted by the `xRET` instruction.
 [%header,cols="2,2,2,2,3"]
 |===
 | Register | Access | Proposed offset | Suggested default | Description
-| `mwidseclist` | RW for M until locked | ??? | `0x0` | NS-Req security level of WIDs
+| `mipsmwidseclist` | RW for M until locked | `0x7f3` | `0x0` | NS-Req security level of WIDs
 |===
 
-==== `mwidseclist`: Security Level of WIDs
+==== `mipsmwidseclist`: Security Level of WIDs
 
 [%header,cols="1,2,5"]
 |===

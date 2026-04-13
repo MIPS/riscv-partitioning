@@ -5,161 +5,47 @@
 
 === Preamble
 
-The original WG solution proposes a sequence of incremental extensions that
-progressively add CSR registers but do not add any new instructions. We propose
-that;
+The draft RISC-V "Worlds" specification, found at
+https://github.com/riscv/riscv-worlds, proposes a sequence of incremental
+extensions that progressively add CSR registers but do not add any new
+instructions. We incorporate that specification with the following adaptations;
 
-* The publicly-available WG definition is modified;
-** For improvement of WG;
-*** Addition of `mwid` and `mwidlist` CSRs and their respective
-    behaviors.footnote:[There is a second publicly-available WG document that
-    suggests the existence of these two additional CSRs, but it does not
-    specify any detail so we are treating our definition as a modification.]
-*** World ID (or `WID`) registers are reduced to a theoretical maximum of 16
-    bits, for consistency with IOPMP's `RRID` and to leave register space for
-    future extensions.
-*** Alternative illegal-value (and WARL) semantics for the WG CSRs.
-** Sane power-on defaults that behave as a system without any partitioning.
-** To support the Hypervisor extension, addition of `hlwid`, `hwiddeleg`,
-   `vslwid` and associated behaviors.
-* Some of the WG CSRs be exposed for external control.
-* We will briefly define the extensions by the registers they introduce, after
-  which we will document the architecture as it exists with all extensions
-  fully implemented and enabled.
-
-[[extensions]]
-=== Extensions
-
-In the following subsections, it is worth noting the use of the "RoT" privilege
-level concept, as discussed in <<rotMode>>. This might be an external agent or
-it might be early boot M-mode, the point is that it controls _lockable_
-configuration, that, once locked, constrains run-time M-mode.
-
-==== Smwid: A hart-specific WID
-
-Creation of a lockable `mwid` register provides the entry-level extension. This
-register may be set and locked before the hart comes out of reset, or it may
-still be writable. Transactions from all 3 privilege levels are tagged with the
-same WID.
-
-[caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smwid decision tree"]
-image::WorldID-smwid.drawio.svg[]
-
-==== Smwidl: Lower-than-M-mode WID support
-
-Dependent on Smwid, this extension creates the `mlwid` register that specifies
-the WID for transactions from the lower privilege levels (S and U).
-
-[caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smwidl decision tree"]
-image::WorldID-smwidl.drawio.svg[]
-
-==== Smwidm: Delegation to M-mode
-
-Dependent on Smwidl, this extension creates the `mwidlist` register that is
-implicitly locked whenever `mwid` is, and which acts as a bitmask to authorize
-the WID values that `mlwid` can successfully issue transactions for (i.e.
-without being faulted). This functionality allows M-mode to be locked into a
-configuration that;
-
-* stipulates M-mode's WID (`mwid`),
-* stipulates the set of WIDs that S-mode and U-mode should use
-  (`mwidlist`),
-* allows M-mode to modify `mlwid` as it pleases, but faults S and U mode
-  transactions if the corresponding bit in `mwidlist` isn't asserted.
-
-[caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smwidm decision tree"]
-image::WorldID-smwidm.drawio.svg[]
-
-[[smwids]]
-==== Smwids: User-mode and delegation to S-mode
-
-Dependent on Smwidl, this extension creates the `mwiddeleg` and `slwid`
-registers, allowing M-mode to delegate to S-mode the capability of setting WIDs
-for U-mode. `slwid` controls the WID for U-mode transactions, meaning that
-`mlwid` now applies only to S-mode transactions. It continues to be the case
-that U-mode transactions will fault if the effective WID (now `slwid`) does not
-have the corresponding bit asserted in `mwidlist`. Now, U-mode transactions
-will _also_ fault if the bit corresponding to `slwid` is not asserted in
-`mwiddeleg` - meaning that the latter is an M-mode-controlled filter on the
-WIDs that S-mode can (successfully) assign to U-mode. I.e. constrained
-delegation from M to S.
-
-[caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smwids decision tree"]
-image::WorldID-smwids.drawio.svg[]
-
-[[smwidv]]
-==== Smwidv: Hypervisor support
-
-The addition of the Hypervisor extension adds a boolean `V` mode that affects
-the behavior of `S` and `U` modes. When `V=0`, `S` and `U` mode are referred to
-as `HS` and `HU` respectively (here `H` represents "Host" or "Hypervisor",
-either will do). When `V=1`, they are referred to as `VS` and `VU`
-respectively. (`V` represents "Virtual".) When the Hypervisor extension is
-enabled, the behavior defined in <<smwids>> for `S` and `U` is also the
-expected behavior for the `V=0` case, i.e. for `HS` and `HU`.
-
-What remains is to define the expected behavior for the `VS` and `VU` states,
-which we do via the addition of two `HS`-level registers (that are not visible
-to `VS`), called `hlwid` and `hwiddeleg`, and a single `VS`-level shadow
-register called `vslwid`. These extend the existing WID and WID-delegation
-concepts to the additional level of privilege hierarchy that the H extension
-introduces.
-
-Dependent on Smwids, this extension adds the `hlwid`, `hwiddeleg`, and `vslwid`
-registers, that provide the adaptations illustrated below whenever the
-Hypervisor extension is enabled. (When the Hypervisor extension isn't enabled,
-this extension has no effect.)
-
-[[smwidvtree]]
-[caption="Figure {counter:image}: ", reftext="Figure {image}"]
-[title="World-ID Smwidv decision tree"]
-image::WorldID-smwidv.drawio.svg[]
+* We incorporate a proposal to extend the draft Worlds specification with
+  support for the Hypervisor extension. The details of that proposal can be
+  found at https://github.com/riscv/riscv-worlds/pull/19.
+* We explicitly define the CSR formats and their power-on defaults.
+* We assume that all extensions are implemented and enabled, so that
+  implementations do not have to implement modal behavior to support different
+  enablement combinations.
+* We provide a table of "platform variables", whose existence are described in
+  the draft Worlds specification but not summarily listed. An implementation
+  may choose to correlate these variables to product-specific constants or
+  even configuration options or system registers, as applicable.
+* We identify the Worlds CSRs that should be exposed for external control.
+* Due to the fact that the Worlds specification is still in draft status (as
+  is the proposed enhancement to support the Hypervisor extension), we take a
+  couple of measures to insulate this specification from conflicting with a
+  future RISC-V specification;
+** We prefix the CSR names with "mips". Note, to avoid the visual unpleasantness
+   of renaming all mention of CSRs, we use the "mips" prefix only in the section
+   listing and defining the CSRs, we leave the general documentation material
+   without the "mips" prefix.
+** We (re)define the CSR offsets to come from vendor-specific ranges, so that
+   they won't conflict with any future public specification. These are chosen
+   for use as-is by MIPS (who have reserved these offsets accordingly), but
+   this might need further adjustment for use by other vendors.
 
 === Configuration handling
-
-The precise behavior of (and interaction between) the CSRs will be described in
-two parts, depending on whether they are the _lockable partitioning registers_
-(`mwid`, `mwidlist`, `mwidseclist`) or the _run-time manipulable registers_
-(`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`, `vslwid`). They are in
-sections <<lockablePartitioning>> and <<runtimeManipulable>>, respectively.
-
-==== Illegal values
-
-For registers holding WID values, the most recent publicly-available WG
-proposal stipulates: "if an illegal WID is written, the lowest-numbered legal
-WID is returned". It does not specify how WID-holding registers should behave
-if, rather than them being written with illegal values, __their existing values
-become implicitly illegal__ due to changes to other registers.
-
-In this proposal, we opt for different semantics to handle such cases and
-therefore deviate from the original WG proposal. Instead of having "illegal
-values" that need to be corrected (in a WARL sense), we allow all registers to
-assume arbitrary values, whereby the so-called "illegal values" simply
-correspond to (mis)configurations that by their nature will fail to operate.
-(The only corrective WARL behavior required is to limit the number of supported
-bits.)
-
-==== Register visibility
-
-This proposal takes a minimalist approach to register visibility. Specifically,
-World-ID registers are only visible to privilege levels that have writable
-control over them. If a software context needs to know any WID or WID-bitmask
-values that it does not have control over (e.g. S-mode software wanting to know
-`mwiddeleg`, which indicates the set of WIDs delegated to it), then that will
-need to be conveyed to it through software mechanisms.
 
 [[lockablePartitioning]]
 ==== Lockable partitioning registers
 
-`mwid`, `mwidlist`
+This category of CSRs should be exposed for external configuration control (by
+an HSM, parent system, or other root of trust).
 
-* These are the CSR registers that are exposed for external configuration
-  control.
-* These registers are assumed to be set statically to constrain the hart until
+`mwid`, `mlwidlist`
+
+* These registers are assumed to be set and locked to constrain the hart until
   it is next reset, and the behavior of the "run-time manipulable registers" is
   governed by these registers.
 * Apart from the "L"ock bit in `mwid` (which is sticky to 1 and renders both
@@ -169,40 +55,13 @@ need to be conveyed to it through software mechanisms.
 [[runtimeManipulable]]
 ==== Run-time manipulable registers
 
-`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`, `vslwid`
+These are the CSRs that are expected to be modified by M-mode and S-mode at
+run-time, though many use-cases will use static/unchanging values for these
+CSRs also. These CSRs are not lockable and are not exported for external
+configuration, and so they are not considered part of the partitioning
+configuration (rather, they work within the partitioning configuration).
 
-* These are the CSRs that are expected to be modified by M-mode and S-mode at
-  run-time, though many use-cases will use static/unchanging values for these
-  CSRs also. These CSRs are not lockable and are not exported for external
-  configuration, and so they are not considered part of the partitioning
-  configuration (rather, they work within the partitioning configuration).
-* `mlwid`: this register determines the effective WID of (H)S-mode if the
-  Smwids extension is enabled, otherwise it determines the effective WID of all
-  S and U modes. Though it makes sense for the corresponding bit in `mwidlist`
-  to be set, there is no need to enforce such relationships at the register
-  level, the effects of a misconfiguration will take care of themselves.
-  (Loads, stores, and instruction fetches for S-mode and U-mode will fault.)
-* `hlwid`: this register determines the effective WID of VS-mode. It makes sense
-  for the corresponding bits in `mwidlist` and `mwiddeleg` to be set, otherwise
-  VS-mode transactions will fault.
-* `slwid`: this register determines the effective WID of U-mode. It makes sense
-  for the corresponding bits to be set in `mwidlist` and `mwiddeleg`, otherwise
-  U-mode transactions will fault.
-* `vslwid`: This CSR is the virtualization shadow register of the slwid
-   register. In HS-mode this register can be programmed to set the effective
-   WID of VU mode. It makes sense for the corresponding bits in `hwiddeleg` to
-   be set.
-* `mwiddeleg`: this register determines the WIDs that (H)S-mode is allowed to
-  assign to U-mode (and, if the Hypervisor extension is enabled, VS-mode), i.e.
-  those WIDs that can (or should) be set in `slwid` (and `hlwid`). It makes
-  sense for `mwiddeleg` to be a strict subset of `mwidlist` (as nothing unset
-  in `mwidlist` can be expected to work), but there is no need to enforce this
-  at the register level.
-* `hwiddeleg`: this register determines the WIDs that VS-mode is allowed to
-  assign to VU-mode, ie. those WIDs that can (or should) be set in `vslwid` when
-  `V=1`. It makes sense for `hwiddeleg` to be a strict subset of `mwiddeleg`
-  (as HS-mode can not successfully delegate WIDs that were not delegated to
-  it).
+`mlwid`, `mwiddeleg`, `hlwid`, `hwiddeleg`, `slwid`, `vslwid`
 
 [[runtimeDiscovery]]
 ==== Run-time discovery
@@ -236,7 +95,7 @@ of outgoing transactions.
 The ISA inherently limits the number of supported WIDs ("NWorlds" in WG terms)
 to `XLEN`,footnote:[whether `XLEN` is 32, 64, or 128 depends on the RISC-V
 hardware configuration] as there are XLEN-bit registers that serve as WID
-bitmasks (`mwidlist`, `mwiddeleg`, `hwiddeleg`). However, an extension will
+bitmasks (`mlwidlist`, `mwiddeleg`, `hwiddeleg`). However, an extension will
 likely be proposed to extend the WID bitmasks, in which case this limit may be
 overcome.
 
@@ -255,61 +114,33 @@ zero.
 * If the CSR is a WID-holding register (`mwid`, `mlwid`, `hlwid`, `slwid`,
   `vslwid`), the result will determine the supported WID-width in bits, the
   range of WIDs will therefore be from 0 to 2^WIDwidth^-1, inclusive.
-* If the CSR is a WID-bitmask-holding register (`mwidlist`, `mwiddeleg`,
+* If the CSR is a WID-bitmask-holding register (`mlwidlist`, `mwiddeleg`,
   `hwiddeleg`), the result will determine the range of WIDs itself, and this
   should be a power of 2.
 
 The implementation must ensure that the two methods for determing the valid WID
 range are consistent with one another, i.e. width(WIDBITMASK) == 2^width(WID)^
 
-[[decisionLogic]]
-=== Decision logic
-
-The following two subsections describe how the World-ID extension determines
-whether to accept or reject a load/store/fetch transaction. In all cases where
-the decision is to reject the transaction, the fault type chosen for the
-rejection will be derived from the transaction type:
-
-* a load will trigger a "Load access fault"
-* an instruction fetch will trigger an "Instruction access fault"
-* a store will trigger a "Store/AMO access fault"
-
-In the cases where the decision is to accept the transaction, this decision
-logic also determines the WID value with which to tag the outgoing transaction.
-
 ==== Effective WID
 
 The WID of each privilege mode is determined by the World-ID registers per the
 following table, based on how many World-ID extensions are enabled (they are
-enabled successively, from left-to-right). Note that the Smwidd extension does
-not add any WID registers and so presents the same characteristics as Smwidl.
+enabled successively, from left-to-right). Note that the Smwiddeleg extension does
+not add any WID registers and so presents the same characteristics as Smlwid.
 
 [%header,cols="1,1,2,1,2"]
 |===
-^| Mode ^| Smwid  ^| Smwidl, Smwidd ^| Smwids  ^| Smwidv (all enabled)
-^| M    ^| `mwid` ^| `mwid`         ^| `mwid`  ^| `mwid`
-^| HS/S ^| `mwid` ^| `mlwid`        ^| `mlwid` ^| `mlwid`
-^| VS   ^| `mwid` ^| `mlwid`        ^| `mlwid` ^| `hlwid`
-^| HU/U ^| `mwid` ^| `mlwid`        ^| `slwid` ^| `slwid`
-^| VU   ^| `mwid` ^| `mlwid`        ^| `slwid` ^| `vslwid`
+^| Mode ^| Smwid  ^| Smlwid  ^| Sswid  ^| Shlwid (all enabled)
+^| M    ^| `mwid` ^| `mwid`  ^| `mwid`  ^| `mwid`
+^| HS/S ^| `mwid` ^| `mlwid` ^| `mlwid` ^| `mlwid`
+^| VS   ^| `mwid` ^| `mlwid` ^| `mlwid` ^| `hlwid`
+^| HU/U ^| `mwid` ^| `mlwid` ^| `slwid` ^| `slwid`
+^| VU   ^| `mwid` ^| `mlwid` ^| `slwid` ^| `vslwid`
 |===
 
 * The "effective WID" is the WID of the current privilege mode.
-
-==== Accept/reject
-
-Please see <<smwidvtree>> in <<smwidv>> for a visual representation of this
-decision logic.
-
-* If the hart is in VU-mode (i.e. when U-mode and `V=1`), and if the effective
-  WID is not set in `hwiddeleg`, reject transaction.
-* If the hart is in VS-mode (i.e. when S-mode and `V=1`) or in any kind of
-  U-mode, and if the effective WID is not set in `mwiddeleg`, reject
-  transaction.
-* If the hart is not in M-mode and the effective WID is not set in `mwidlist`,
-  reject transaction.
-* If the transaction is accepted, the effective WID is signaled on the outgoing
-  transaction.
+* This proposal suggests that all the Worlds extensions be implemented and
+  enabled, implying that the right-most column will always apply.
 
 === Power-on defaults
 
@@ -323,7 +154,7 @@ defaults to behave as though the system had no World-ID constraints in place.
 ==== External configuration disabled or optional
 
 The one problem with the "zero method" is that the bitmask registers
-`mwidlist`, `mwiddeleg`, and `hwiddeleg` control which WIDs (at different
+`mlwidlist`, `mwiddeleg`, and `hwiddeleg` control which WIDs (at different
 privilege modes) are allowed to issue transactions, and so if those registers
 are zero, the affected modes will be unable to issue an instruction fetch...
 
@@ -345,25 +176,22 @@ adapted.
 
 ==== Summary
 
-The following table contains the CSRs defined by this proposal.
-
 [%header,cols="2,2,2,2,3"]
 |===
 | Register | Access | Proposed offset | Suggested default | Description
-
-| `mwid` | RW for M until locked | ??? | `0x0` | WID for M-mode
-| `mwidlist` | RW for M until locked | ??? | `0x1` | Set of allowable WIDs
-| `mlwid` | RW for M | `0x390` | `0x0` | WID for (H)S-mode
-| `mwiddeleg` | RW for M | `0x748` | `0x1` | Set of WIDs delegated to (H)S-mode
-| `hlwid` | RW for (H)S | ??? | `0x0` | WID for VS-mode
-| `hwiddeleg` | RW for (H)S | ??? | `0x1` | Set of WIDs delegated to VS-mode
-| `slwid` | RW for S | `0x190` | `0x0` | WID for U-mode
-| `vslwid` | RW for M | ??? | `0x0` | Virtual Supervisor mode Lower World Identifier
+| `mipsmwid` | RW for M until locked | `0x7f1` | `0x0` | WID for M-mode
+| `mipsmlwid` | RW for M | `0x7f4` | `0x0` | WID for (H)S-mode
+| `mipsmlwidlist` | RW for M until locked | `0x7f2` | `0x1` | Set of allowable WIDs
+| `mipsmwiddeleg` | RW for M | `0x7f5` | `0x1` | Set of WIDs delegated to (H)S-mode
+| `mipshlwid` | RW for (H)S | ??? | `0x0` | WID for VS-mode
+| `mipshwiddeleg` | RW for (H)S | ??? | `0x1` | Set of WIDs delegated to VS-mode
+| `mipsslwid` | RW for S | `0x9d4` | `0x0` | WID for U-mode
+| `mipsvslwid` | RW for M | ??? | `0x0` | Virtual Supervisor mode Lower World Identifier
 |===
 
 The following sections provide more detail on each of these registers.
 
-==== `mwid`: WID for M-mode
+==== `mipsmwid`: WID for M-mode
 
 [%header,cols="1,1,5"]
 |===
@@ -376,7 +204,7 @@ The following sections provide more detail on each of these registers.
 Only Ceil(Log~2~(NWorlds)) LSBs are writable, others are read-only zero.
 |===
 
-This register and `mwidlist` become locked once the L bit is set, after which
+This register and `mlwidlist` become locked once the L bit is set, after which
 the registers are read-only (and so `mwid` can't be unlocked) and writes are
 silently dropped. The locking is only released when the block is reset. When
 unlocked, all writes to these registers commit atomically.
@@ -387,29 +215,7 @@ to `mwid.L`, the lock on all 3 registers takes effect after the write.
 Only the lower Ceil(Log~2~(NWorlds)) bits of WID are implemented. The remaining
 are read-only zero.
 
-==== `mwidlist`: Set of allowable WIDs
-
-[%header,cols="1,1,5"]
-|===
-| Name | Bits | Description
-| MASK | `[XLEN-1]:0`
-| Bit-vector limiting the WIDs that may be used by this hart. LSB corresponds
-to WID 0, `NWorlds` LSBs are used, others are read-only zero.
-|===
-
-This register is locked if and only if the `mwid` register is. The `mwidlist`
-CSR ignores writes when locked by `mwid`. CSR writes to `mwidlist` and `mwid`
-are ordered by the hardware in the same manner as writes to ePMP registers.
-When necessary, software can enforce a specific ordering between a CSR write
-and other instructions with an appropriate FENCE.
-
-Only the lower NWorlds bits of MASK are implemented. The remaining are
-read-only zero.
-
-Note, `mwidlist` restrictions only apply to privilege modes below M-mode. I.e.
-M-mode's use of the `mwid` WID is not constrained by `mwidlist`.
-
-==== `mlwid`: WID for (H)S-mode
+==== `mipsmlwid`: WID for (H)S-mode
 
 [%header,cols="1,1,5"]
 |===
@@ -428,7 +234,29 @@ read-only zero.
 Writes to `mlwid` have the same ordering semantics as writes to the ePMP CSRs
 with respect to when a write to `mlwid` takes effect.
 
-==== `mwiddeleg`: Set of WIDs delegated to (H)S-mode
+==== `mipsmlwidlist`: Set of allowable WIDs
+
+[%header,cols="1,1,5"]
+|===
+| Name | Bits | Description
+| MASK | `[XLEN-1]:0`
+| Bit-vector limiting the WIDs that may be used by this hart. LSB corresponds
+to WID 0, `NWorlds` LSBs are used, others are read-only zero.
+|===
+
+This register is locked if and only if the `mwid` register is. The `mlwidlist`
+CSR ignores writes when locked by `mwid`. CSR writes to `mlwidlist` and `mwid`
+are ordered by the hardware in the same manner as writes to ePMP registers.
+When necessary, software can enforce a specific ordering between a CSR write
+and other instructions with an appropriate FENCE.
+
+Only the lower NWorlds bits of MASK are implemented. The remaining are
+read-only zero.
+
+Note, `mlwidlist` restrictions only apply to privilege modes below M-mode. I.e.
+M-mode's use of the `mwid` WID is not constrained by `mlwidlist`.
+
+==== `mipsmwiddeleg`: Set of WIDs delegated to (H)S-mode
 
 [%header,cols="1,1,5"]
 |===
@@ -442,7 +270,7 @@ This register does not lock so it remains writable to M-mode at all times.
 Only the lower NWorlds bits of MASK are implemented. The remaining are
 read-only zero.
 
-==== `hlwid`: WID for VS-mode
+==== `mipshlwid`: WID for VS-mode
 
 [%header,cols="1,1,5"]
 |===
@@ -461,7 +289,7 @@ read-only zero.
 Writes to `hlwid` have the same ordering semantics as writes to the ePMP CSRs
 with respect to when a write to `hlwid` takes effect.
 
-==== `hwiddeleg`: Set of WIDs delegated to VS-mode
+==== `mipshwiddeleg`: Set of WIDs delegated to VS-mode
 
 [%header,cols="1,1,5"]
 |===
@@ -476,7 +304,7 @@ This register does not lock so it remains writable to M-mode at all times.
 Only the lower NWorlds bits of MASK are implemented. The remaining are
 read-only zero.
 
-==== `slwid`: WID for U-mode
+==== `mipsslwid`: WID for U-mode
 
 [%header,cols="1,1,5"]
 |===
@@ -495,7 +323,7 @@ read-only zero.
 Writes to `slwid` have the same ordering semantics as writes to the ePMP CSRs
 with respect to when a write to `slwid` takes effect.
 
-==== `vslwid`: Virtual Supervisor mode Lower World Identifier
+==== `mipsvslwid`: Virtual Supervisor mode Lower World Identifier
 
 [%header,cols="1,1,5"]
 |===
