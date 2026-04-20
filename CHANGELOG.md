@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **_NOTE:_** PROJECTS BUILT USING THE TEMPLATE SHOULD UPDATE THE BELOW SECTIONS AS-NEEDED.
 
+## [0.7.5-dev]
+
 ## [0.7.4]
 - Update to use v0.8.2 of the IOPMP spec as the baseline (previously it was
   0.7).
