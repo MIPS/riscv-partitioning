@@ -4,7 +4,7 @@
 == The "eIOPMP" extension
 
 It is assumed the reader is familiar with the RISC-V IOPMP Architecture
-Specification (v0.7), upon which this section is based. It specifies a firewall
+Specification (v0.8.2), upon which this section is based. It specifies a firewall
 look-aside component that can look up and apply rules to bus transactions, in a
 manner comparable to the ePMP model of the RISC-V hart.
 
@@ -128,7 +128,7 @@ eIOPMP assumes its output to consist of;
 
 ==== Match-based output WIDs
 
-IOPMP implements a global output WID override with the `HWCFG2.rrid_transl`
+IOPMP implements a global output WID override with the `HWCFG3.rrid_transl`
 register field. We will also support WID override on a per-match basis. If the
 IOPMP entry that determines the transaction's outcome has enabled a WID
 override, that takes precedence over the global output WID.
@@ -150,18 +150,6 @@ eIOPMP MUST implement a sticky-until-reset register field that renders all
 eIOPMP configuration registers read-only, excepting the "error capture
 registers".
 ****
-
-For the existing IOPMP-defined locking registers;
-
-* `MDLCK[H]`, `MDCFGLCK`, `ENTRYLCK`, are all implemented as documented.
-  However, these registers will not be updated when the entire eIOPMP
-  configuration is locked, they will continue to appear to lock the ranges and
-  subsets that they lock, even if apparently "unlocked" elements are in fact
-  locked because the whole configuration is locked.
-* `HWCFG0.rrid_transl_prog` is implemented as documented. In an eIOPMP instance
-  with no marking capability, this field (and `HWCFG0.rrid_transl_en`) will be
-  wired to 0. This register field will not be updated when the entire eIOPMP
-  configuration is locked.
 
 === Parallelism and channels
 
@@ -192,44 +180,40 @@ IOPMP entries.
 
 ==== Match-specific WID overrides with non-priority entries
 
-Recall that IOPMP has a register field `HWCFG2.prio_entry` that partitions the
-available set of IOPMP entries into priority entries and non-priority entries.
-When the checker performs a lookup on the IOPMP entry array for a given address
-range, the IOPMP guarantees to correctly match on the first corresponding
-priority entry, and only that entry, if any such match exists. That defines
-what happens if more than one priority entry matches against the address range;
-the lowest-index match wins out. That entry specifies the permitted access
-modes that will then be applied. (E.g. two different priority entries may
-specify different access modes, so it matters which of the entries is matched.)
+Recall that IOPMP has a register field `HWCFG2.non_prio_en` that indicates
+whether the IOPMP instance implements non-priority entries. This is a feature
+to support IOPMP instances with large table sizes, where strict ordering
+guarantees can be relaxed to allow for improved caching and parallelism within the
+hardware. If the IOPMP checker is performing a lookup on the IOPMP entry array
+for a given address range and it matches on one or more priority entries, the
+IOPMP guarantees to adhere to the criteria and actions specified only in the
+highest-priority of those entries (i.e. on the lowest-index match). Many
+IOPMP instances will only have priority entries, so they behave in this manner.
 
-There is no such ordering guarantee for the non-prioritized entries. (The IOPMP
-spec explains that the concept of having non-prioritized entries is as a
-performance/area consideration, because it allows for batches of entries to be
-compared in parallel rather than in strict sequential order.) So, if an address
-range matches on multiple non-prioritized entries (e.g. with different access
-modes specified in each), the result acts as the “union” of the matching
-entries. However, the addition of a WID override to the IOPMP entries does not
-lend itself to any canonical interpretation of a "union", so it raises the
-question of how the device will behave if there are multiple matching,
-non-prioritized entries with their own WID overrides. This could be classified
-as an illegal (mis)configuration, or some other interpretation might be made in
-such a case.
+However, if a given address range does not match on any of the priority
+entries, and if that IOPMP instance implements non-priority entries, then a
+match against multiple non-priority entries becomes possible. The IOPMP
+specification details the behavior in this case, such that if an address range
+matches on multiple non-prioritized entries (e.g. with different access modes
+specified in each), the result acts as the “union” of all the matching entries.
+
+The addition of a WID override to the IOPMP entries does not lend itself to any
+canonical interpretation of a "union", thus raising the question of how the
+device should behave if there are multiple matching, non-prioritized entries
+with their own WID overrides. This could be classified as an illegal
+(mis)configuration, or some other interpretation might be made in such a case.
 
 ****
-eIOPMP implementations MUST specify the behavior of match-specific WID overrides
-when multiple, non-prioritized entries are matched.
+eIOPMP implementations that implement non-prioritized entries and matching MUST
+specify the behavior of match-specific WID overrides in the case where multiple,
+non-prioritized entries match on the same transaction.
 ****
-
-Note that many smaller implementations will (likely) only have priority
-entries, so they will be unaffected by this consideration. The use of
-non-priority entries caters to IOPMP implementations (or instances) that have
-large numbers of entries to match against.
 
 === Registers
 
 ==== Summary
 
-Chapter 5 of v0.7 of the IOPMP specification contains a summary table of device
+Chapter 4 of v0.8.2 of the IOPMP specification contains a summary table of device
 registers. The definition given is 32-bit centric, so this document follows
 suit (we don't divide the register map into XLEN-sized chunks). The following
 is a modified excerpt of that IOPMP specification, in order to show eIOPMP
@@ -240,8 +224,8 @@ additions and modifications (which are *emphasized*).
 | Offset | Register | Changes
 3+^| [...]
 | `0x0010` | HWCFG2 | No change
-| `0x0014` | ENTRYOFFSET | No change
-| `0x0018` | *HWCFG3* | *New register*
+| `0x0014` | HWCFG3 | No change
+| `0x0018` | *HWCFG4* | *New register*
 3+^| [...]
 | `ENTRYOFFSET + (i*0X10)` | ENTRY_ADDR(i) | No change
 | `ENTRYOFFSET + (i*0X10) + 0x4` | ENTRY_ADDRH(i) | No change
@@ -250,33 +234,28 @@ additions and modifications (which are *emphasized*).
 3+^| [...]
 |===
 
-It should be noted that a new register field, `HWCFG3.prog`, implements a sticky
+It should be noted that a new register field, `HWCFG4.prog`, implements a sticky
 (till reset) lockdown of the entire eIOPMP configuration, i.e. rendering all
 eIOPMP registers read-only (except for the "Error capture registers").
 
 [[eiopmphwcfg3]]
-==== `HWCFG3: 0x0018` (new)
+==== `HWCFG4: 0x0018` (new)
 
 [%header,cols="3,2,2,2,8"]
 |===
 | Field | Bits | R/W | Default | Description
 | chk_addr | `0:0` | R | IMP
 | Indicates whether address-checking is performed.
-| prog | `1:1` | W1CS | IMP
-| The lock-until-reset semantics that are documented for
-`HWCFG0.rrid_trans_prog` apply here, but to the whole eIOPMP configuration (not
-just to a specific register or field), with the exception of the "Error Capture
-Registers".
+| prog | `1:1` | W1SS | IMP
+| Lock-until-reset semantics of this bit apply to the whole eIOPMP configuration,
+with the exception of the "Error Capture Registers".
 | rsv | `31:2` | ZERO | 0 | Reserved, wired to zero.
 |===
 
 * If `chk_addr` is zero, checking always matches on the first IOPMP entry
   consulted (for the input's RRID/WID).
 * The new `prog` field locks down the entire eIOPMP configuration except for the
-  Error Capture Registers. This uses the semantics documented for
-  `HWCFG0.rrid_transl_prog` in the IOPMP specification: the field defaults to 1
-  out of reset (the configuration is unlocked), supports a write-1-to-clear
-  semantic, and is sticky to 0 (the configuration is locked).
+  Error Capture Registers.
 
 [[eiopmpentrycfg]]
 ==== `ENTRY_CFG(i): ENTRYOFFSET + (i*0x10) + 0x8` (modified)
@@ -286,11 +265,11 @@ Registers".
 | Field | Bits | R/W | Default | Description
 | r | `0:0` | WARL | DC | No change
 5+^| [...]
-| sexe | `10:10` | WARL | 0 | No change
-| *wid_en* | `11:11` | WARL | 0
+| a | `4:3` | WARL | DC | No change
+| *wid_en* | `5:5` | WARL | 0
 | *New field:* causes matching transactions to have `wid` override the RRID/WID
 field of the request.
-| *rsv* | `15:12` | ZERO | 0
+| *rsv* | `15:6` | ZERO | 0
 | *Modified:* shrunk, used to be bits `31:11`.
 | *wid* | `31:16` | WARL | DC
 | *New field:* WID override value, if `wid_en` is set.
