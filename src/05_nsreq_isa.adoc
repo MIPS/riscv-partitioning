@@ -6,9 +6,9 @@
 === Preamble
 
 * The World-ID extension set is augmented;
-** The Zwidns extension - addition of `mwidseclist` and its behavior. (See
+** The Zmwidns extension - addition of `mwidseclist` and its behavior. (See
    <<zmwidns>>.)
-** The Zwidnsc extension - enforcement of sane relationships between the NS-Req
+** The Zmwidnsc extension - enforcement of sane relationships between the NS-Req
    security levels of the (WIDs associated with the) 3 hart privilege levels.
    (See <<zmwidnsc>>).
 
@@ -27,7 +27,7 @@ This extension is dependent on Smwid.
 
 ==== `mwidseclist`
 
-The Zwidns extension adds the `mwidseclist` CSR that is like the WID bitmask
+The Zmwidns extension adds the `mwidseclist` CSR that is like the WID bitmask
 registers in <<isa>> in that it holds a single bit per WID, for up to `XLEN`
 WIDs. Each bit in `mwidseclist` holds the NS-Req security level for the
 corresponding WID.
@@ -74,7 +74,7 @@ secure' corresponds to a lower NS-Req _value_;
 ....
 
 The following list shows the process for determining whether to accept or
-reject a load/store/fetch transaction with the Zwidnsc extension enabled. See
+reject a load/store/fetch transaction with the Zmwidnsc extension enabled. See
 the RISC-V "Worlds" specification for more information on how rejections are
 handled.
 
