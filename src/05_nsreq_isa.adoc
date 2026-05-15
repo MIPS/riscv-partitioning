@@ -75,7 +75,8 @@ secure' corresponds to a lower NS-Req _value_;
 
 The following list shows the process for determining whether to accept or
 reject a load/store/fetch transaction with the Zwidnsc extension enabled. See
-<<decisionLogic>> for more information on how rejections are handled.
+the RISC-V "Worlds" specification for more information on how rejections are
+handled.
 
 * The NS-Req security level of a privilege mode is determined by using that
   privilege level's WID as an index into the `mwidseclist` CSR. Zero is an
