@@ -160,18 +160,25 @@ IOPMP definition also suggests that IOPMP might be used target-side, but leaves
 as "implementation-dependent" the manner in which an input RRID would be
 provided in that case.
 
-To make use of WID (at all) and/or NS-Req (outside the hart), there must be
-WID-aware (and/or NS-Req-aware) targets and/or routers within the interconnect,
-otherwise there is little point to tagging transactions with either concept.
-__We achieve this by making a small series of improvements to IOPMP.__ The
-resulting "enhanced IOPMP" (hereafter "eIOPMP") can be instantiated as a
-target-side or routing firewall.
+Though the baseline IOPMP definition provides for the implementation of
+WID-aware firewalls, it is not sufficient for implementing WID-aware routers.
+Consider the following diagram;
 
-Note also that, as with ePMP, there is the implementation-specific decision of
-how the NS-Attr attributes are maintained for the physical address space, so
-that the eIOPMP can compare the NS-Req of the request(er) against the target
-range. __We provide an optional mechanism for recording the NS-Attr attributes
-of physical address ranges within the ePMP/eIOPMP configuration.__
+image::IOPMPsubsystems.drawio.svg[IOPMPsubsystems,align="center"]
+
+There are firewalls ("checker" and "chk") located both source-side and
+target-side, and at both the host scope and within subsystems, and they can be
+satisfied by the baseline IOPMP definition. However, the "router" elements are
+also required in general.
+
+Additionally, to maintain consistency with the ISA support for NS-Req and
+NS-Attr, enhancements are required to the baseline IOPMP definition in order to
+provide similar controls at the system level.
+
+__We achieve the aforementioned requirements by a small series of improvements
+to IOPMP.__ The resulting "enhanced IOPMP" (hereafter "eIOPMP") can be
+instantiated in all the required configurations and use-cases, which will be
+spelled out in more detail in <<eiopmp>>.
 
 [[extconfig]]
 === External configuration
