@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **_NOTE:_** PROJECTS BUILT USING THE TEMPLATE SHOULD UPDATE THE BELOW SECTIONS AS-NEEDED.
 
+## [0.7.6-dev]
+
 ## [0.7.5]
 - Update (e)IOPMP requirements in chapter 2 (overview), add router diagram.
 
